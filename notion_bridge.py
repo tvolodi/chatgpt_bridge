@@ -1,4 +1,4 @@
-# notion_bridge.py — Integrated Bridge with Object Tree Indexing + Alias Preview
+# notion_bridge.py — Full Bridge with Object Tree Indexing + Alias Preview + Database Support
 from fastapi import FastAPI, Request
 import requests
 import json
@@ -144,6 +144,17 @@ def notion_search(query: str):
     payload = {"query": query, "page_size": 20}
     return requests.post(url, headers=notion_headers(), data=json.dumps(payload))
 
+# --- NEW DATABASE OPERATIONS ---
+def notion_create_database_item(database_id: str, properties: dict):
+    url = "https://api.notion.com/v1/pages"
+    payload = {"parent": {"database_id": database_id}, "properties": properties}
+    return requests.post(url, headers=notion_headers(), data=json.dumps(payload))
+
+def notion_update_database_item(page_id: str, properties: dict):
+    url = f"https://api.notion.com/v1/pages/{page_id}"
+    payload = {"properties": properties}
+    return requests.patch(url, headers=notion_headers(), data=json.dumps(payload))
+
 # --- API ENDPOINTS ---
 @app.post("/notion")
 async def handle_notion_action(request: Request):
@@ -155,9 +166,14 @@ async def handle_notion_action(request: Request):
     action = body.get("action")
 
     # Resolve aliases if provided
-    if body.get("alias") and not body.get("parent_id"):
-        body["parent_id"] = resolve_alias(body["alias"])
+    if body.get("alias"):
+        resolved = resolve_alias(body["alias"])
+        if action in ("create_database_item", "query_database"):
+            body["database_id"] = resolved
+        else:
+            body["parent_id"] = resolved
 
+    # Execute the requested action
     if action == "create_page":
         res = notion_create_page(body.get("title", "Untitled"), body.get("parent_id"))
     elif action == "update_page":
@@ -168,6 +184,10 @@ async def handle_notion_action(request: Request):
         res = notion_list_children(body.get("block_id"))
     elif action == "query_database":
         res = notion_query_database(body.get("database_id"), body.get("filter"))
+    elif action == "create_database_item":
+        res = notion_create_database_item(body.get("database_id"), body.get("properties", {}))
+    elif action == "update_database_item":
+        res = notion_update_database_item(body.get("page_id"), body.get("properties", {}))
     elif action == "search":
         res = notion_search(body.get("query", ""))
     elif action == "template":
@@ -179,7 +199,7 @@ async def handle_notion_action(request: Request):
 
     if res.status_code == 200:
         alias_used = body.get("alias")
-        parent_id = body.get("parent_id")
+        parent_id = body.get("parent_id") or body.get("database_id")
         alias_name = alias_used or get_alias_for_id(parent_id)
         try:
             return {
