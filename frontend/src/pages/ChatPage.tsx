@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import ChatArea from '../components/ChatArea'
 import ChatInput from '../components/ChatInput'
 import { useChatStore } from '../stores/chatStore'
+import { useUserStateStore } from '../stores/userStateStore'
 import { chatAPI } from '../services/api'
 
 interface Message {
@@ -12,27 +13,45 @@ interface Message {
 }
 
 export const ChatPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  
+  const { messages, addMessage, setMessages, sessionId, setSessionId } = useChatStore()
+  const { addRecentActivity, updateSession } = useUserStateStore()
+
   // Initialize chat session
   useEffect(() => {
     const initChat = async () => {
       try {
         const response = await chatAPI.createSession()
-        // Store session ID (in real app, would use store)
-        localStorage.setItem('sessionId', response.data.session_id)
+        setSessionId(response.data.session_id)
+
+        // Update user state with session
+        updateSession({
+          sessionId: response.data.session_id,
+          lastActivity: new Date()
+        })
+
+        // Add recent activity
+        addRecentActivity({
+          action: 'start',
+          resourceType: 'session',
+          resourceId: response.data.session_id,
+          title: 'Started new chat session',
+          timestamp: new Date(),
+          metadata: { session_type: 'chat' }
+        })
       } catch (error) {
         console.error('Failed to create session:', error)
       }
     }
-    
-    initChat()
-  }, [])
-  
+
+    if (!sessionId) {
+      initChat()
+    }
+  }, [sessionId, setSessionId, updateSession, addRecentActivity])
+
   const handleSendMessage = async (text: string) => {
-    const sessionId = localStorage.getItem('sessionId') || 'default'
-    
+    if (!sessionId) return
+
     // Add user message immediately
     const userMessage: Message = {
       role: 'user',
@@ -40,19 +59,45 @@ export const ChatPage: React.FC = () => {
       id: `msg-${Date.now()}`,
       timestamp: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, userMessage])
+    addMessage(userMessage)
     setIsLoading(true)
-    
+
+    // Update session activity
+    updateSession({
+      lastActivity: new Date(),
+      draftContent: undefined
+    })
+
+    // Add recent activity
+    addRecentActivity({
+      action: 'send',
+      resourceType: 'message',
+      resourceId: userMessage.id,
+      title: 'Sent message',
+      timestamp: new Date(),
+      metadata: { message_length: text.length }
+    })
+
     try {
       const response = await chatAPI.sendMessage(sessionId, text)
-      
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.data.message,
         id: `msg-${Date.now()}-resp`,
         timestamp: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, assistantMessage])
+      addMessage(assistantMessage)
+
+      // Add assistant response activity
+      addRecentActivity({
+        action: 'receive',
+        resourceType: 'message',
+        resourceId: assistantMessage.id,
+        title: 'Received AI response',
+        timestamp: new Date(),
+        metadata: { response_length: response.data.message.length }
+      })
     } catch (error) {
       console.error('Failed to send message:', error)
       const errorMessage: Message = {
@@ -61,30 +106,21 @@ export const ChatPage: React.FC = () => {
         id: `msg-${Date.now()}-error`,
         timestamp: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, errorMessage])
+      addMessage(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
   
   return (
-    <div className="flex flex-col h-screen bg-slate-950">
-      {/* Header */}
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-4 shadow-sm">
-        <h1 className="text-xl font-bold text-slate-50">AI Chat Assistant</h1>
-        <p className="text-sm text-slate-400">Your personal AI workspace companion</p>
-      </div>
-      
-      {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col">
-          <ChatArea messages={messages} isLoading={isLoading} />
-          
-          {/* Input area */}
-          <div className="bg-slate-900 border-t border-slate-800 p-4">
-            <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
-          </div>
+    <div className="flex flex-col h-full">
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col">
+        <ChatArea messages={messages} isLoading={isLoading} />
+        
+        {/* Input area */}
+        <div className="bg-slate-900 border-t border-slate-800 p-4">
+          <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
     </div>

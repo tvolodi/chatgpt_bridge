@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from backend.config.settings import settings
-from backend.api import chat, files, workspace
+from backend.api import chat, files, workspace, projects, chat_sessions, ai_providers, conversations, file_management, settings as settings_api, search, user_state
 
 # Configure logging
 logging.basicConfig(level=settings.LOG_LEVEL)
@@ -37,7 +37,15 @@ app.add_middleware(
 
 # Include routers
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-app.include_router(files.router, prefix="/api/files", tags=["files"])
+app.include_router(projects.router)
+app.include_router(chat_sessions.router)
+app.include_router(ai_providers.router)
+app.include_router(conversations.router)
+app.include_router(file_management.router, prefix="/api/files", tags=["file-management"])
+app.include_router(settings_api.router)
+app.include_router(search.router)
+app.include_router(user_state.router)
+app.include_router(files.router, prefix="/api/workspace-files", tags=["workspace-files"])
 app.include_router(workspace.router, prefix="/api/workspace", tags=["workspace"])
 
 

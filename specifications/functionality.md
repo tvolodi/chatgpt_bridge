@@ -1,5 +1,37 @@
 # Functional Requirements
 
+1. **Data persistence Strategy**:
+    - Data persistence will be file-based. Prefferable formats are markedown for text files and JSON for metadata.
+    - Data with relations (projects, sessions, messages) will be stored in structured directories with JSON metadata files to maintain relationships.
+    - For not accounted requirements a lightweight database (e.g., SQLite) can be considered in future iterations.
+
+2. **Multi-User Support**:
+    - The application is designed for single-user use. Multi-user support is out of scope for the initial implementation.
+
+3. **Authentication & Security**:
+    - API keys for AI providers will be stored securely in environment variables.
+    - No user authentication is required for single-user application.
+
+4. **Error Handling & Monitoring**:
+    - Basic error handling will be implemented in all services.
+    - Errors will be logged to console for debugging purposes.
+
+5. **Testing Strategy**:
+    - Unit tests will be written for core services.
+    - Integration tests will be implemented for API endpoints.
+    - End-to-end tests will be considered for critical user flows.
+
+6. **Import/Export Functionality**:
+    - Users can export chat histories and project data as JSON or markdown files.
+    - Import functionality will allow users to load previously exported data back into the application.
+
+7. **Message templates/prompts**:
+    - Users can create, save, and manage message templates for common queries.
+    - Templates can be selected and inserted into the chat input area.
+
+8. **Session sharing**:
+    - The application is a single-user application; session sharing is out of scope for the initial implementation.    
+
 The application must fulfill the following functional requirements:
 
 1. **Workspace organization. Principles:**
