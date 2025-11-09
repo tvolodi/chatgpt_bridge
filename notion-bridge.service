@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/root/chatgpt_bridge
+EnvironmentFile=/root/chatgpt_bridge/.env
 ExecStart=/root/chatgpt_bridge/start.sh
 Restart=always
 RestartSec=5
