@@ -62,6 +62,11 @@ def notion_search(query: str):
 # --- API ENDPOINTS ---
 @app.post("/notion")
 async def handle_notion_action(request: Request):
+
+    api_key = request.headers.get("X-API-KEY")
+    if api_key != os.getenv("API_KEY"):
+        return {"status": "error", "message": "Unauthorized: invalid API key"}
+
     body = await request.json()
     action = body.get("action")
 
