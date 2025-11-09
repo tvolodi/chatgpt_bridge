@@ -1,9 +1,10 @@
+# notion_bridge.py — Integrated Bridge with Object Tree Indexing
 from fastapi import FastAPI, Request
 import requests
 import json
+import os
 from datetime import datetime
 from dotenv import load_dotenv
-import os
 
 # --- LOAD ENVIRONMENT ---
 load_dotenv()
@@ -12,6 +13,9 @@ load_dotenv()
 NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 NOTION_VERSION = os.getenv("NOTION_VERSION", "2022-06-28")
 PORT = int(os.getenv("PORT", 8000))
+API_KEY = os.getenv("API_KEY", NOTION_TOKEN)
+ROOT_PAGE_ID = os.getenv("ROOT_PAGE_ID")
+LOOKUP_PATH = os.getenv("LOOKUP_PATH", "lookup.json")
 
 app = FastAPI(title="AI Dala ↔ Notion Bridge")
 
@@ -23,6 +27,71 @@ def notion_headers():
         "Content-Type": "application/json",
     }
 
+# --- OBJECT TREE INDEXING ---
+def list_children(block_id: str):
+    url = f"https://api.notion.com/v1/blocks/{block_id}/children?page_size=100"
+    try:
+        res = requests.get(url, headers=notion_headers())
+        res.raise_for_status()
+        return res.json().get("results", [])
+    except Exception as e:
+        print(f"⚠️  Error listing children for {block_id}: {e}")
+        return []
+
+def crawl_tree(root_id: str, depth: int = 3):
+    lookup = {}
+    queue = [(root_id, 0)]
+    seen = set()
+    while queue:
+        current, level = queue.pop(0)
+        if current in seen or level > depth:
+            continue
+        seen.add(current)
+        children = list_children(current)
+        for child in children:
+            obj_id = child["id"].replace("-", "")
+            obj_type = child["type"]
+            title = None
+            if "child_page" in child:
+                title = child["child_page"].get("title")
+            elif "child_database" in child:
+                title = child["child_database"].get("title")
+            if title:
+                lookup[title.strip().lower()] = {
+                    "id": obj_id,
+                    "type": obj_type,
+                    "parent": current,
+                    "level": level,
+                }
+            if obj_type in ("child_page", "child_database"):
+                queue.append((obj_id, level + 1))
+    lookup["_meta"] = {"updated": datetime.now().isoformat(), "root": root_id}
+    return lookup
+
+def update_lookup(root_id: str = None, path: str = LOOKUP_PATH):
+    root_id = root_id or ROOT_PAGE_ID
+    if not root_id:
+        raise ValueError("Root page ID not configured.")
+    lookup = crawl_tree(root_id)
+    with open(path, "w") as f:
+        json.dump(lookup, f, indent=2)
+    print(f"✅ Object tree updated: {len(lookup) - 1} entries saved → {path}")
+    return lookup
+
+def resolve_alias(alias_or_id: str):
+    if not os.path.exists(LOOKUP_PATH):
+        return alias_or_id
+    try:
+        with open(LOOKUP_PATH) as f:
+            lookup = json.load(f)
+        alias = alias_or_id.lower()
+        if alias in lookup:
+            return lookup[alias]["id"]
+        return alias_or_id
+    except Exception:
+        return alias_or_id
+
+# --- NOTION API OPERATIONS ---
 def notion_create_page(title: str, parent_id: str):
     url = "https://api.notion.com/v1/pages"
     payload = {
@@ -62,13 +131,16 @@ def notion_search(query: str):
 # --- API ENDPOINTS ---
 @app.post("/notion")
 async def handle_notion_action(request: Request):
-
     api_key = request.headers.get("X-API-KEY")
-    if api_key != os.getenv("NOTION_TOKEN"):
+    if api_key != API_KEY:
         return {"status": "error", "message": "Unauthorized: invalid API key"}
 
     body = await request.json()
     action = body.get("action")
+
+    # Resolve aliases if provided
+    if body.get("alias") and not body.get("parent_id"):
+        body["parent_id"] = resolve_alias(body["alias"])
 
     if action == "create_page":
         res = notion_create_page(body.get("title", "Untitled"), body.get("parent_id"))
@@ -97,11 +169,28 @@ async def handle_notion_action(request: Request):
     else:
         return {"status": "error", "code": res.status_code, "details": res.text}
 
+# --- OBJECT TREE ENDPOINTS ---
+@app.post("/update_tree")
+async def update_tree_endpoint(request: Request):
+    body = await request.json()
+    root_id = body.get("root_id", ROOT_PAGE_ID)
+    lookup = update_lookup(root_id)
+    return {"status": "success", "updated": lookup.get("_meta", {})}
+
+@app.get("/lookup")
+def get_lookup():
+    if not os.path.exists(LOOKUP_PATH):
+        return {"status": "empty"}
+    with open(LOOKUP_PATH) as f:
+        lookup = json.load(f)
+    return lookup
+
 # --- WEBHOOK ENDPOINT ---
 @app.post("/notion/webhook")
 async def notion_webhook(request: Request):
     data = await request.json()
     print(f"\n🔔 Notion Webhook Received @ {datetime.now().isoformat()}\n{json.dumps(data, indent=2)}\n")
+    update_lookup(ROOT_PAGE_ID)
     return {"status": "logged"}
 
 # --- TEMPLATE CREATION ---
@@ -145,5 +234,7 @@ def batch_execute(operations: list):
 # --- RUN LOCALLY ---
 if __name__ == "__main__":
     import uvicorn
+    if ROOT_PAGE_ID:
+        update_lookup(ROOT_PAGE_ID)
     print(f"🚀 Starting AI Dala ↔ Notion Bridge on http://localhost:{PORT} ...")
     uvicorn.run(app, host="0.0.0.0", port=PORT)
