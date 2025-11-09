@@ -64,7 +64,7 @@ def notion_search(query: str):
 async def handle_notion_action(request: Request):
 
     api_key = request.headers.get("X-API-KEY")
-    if api_key != os.getenv("API_KEY"):
+    if api_key != os.getenv("NOTION_TOKEN"):
         return {"status": "error", "message": "Unauthorized: invalid API key"}
 
     body = await request.json()
