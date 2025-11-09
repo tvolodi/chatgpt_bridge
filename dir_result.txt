@@ -1,0 +1,23 @@
+ Volume in drive C has no label.
+ Volume Serial Number is 4204-9C7F
+
+ Directory of c:\pf\chatgpt_bridge
+
+09.11.2025  21:33    <DIR>          .
+08.11.2025  18:12    <DIR>          ..
+09.11.2025  20:46               386 .env
+09.11.2025  12:46                47 .env.example
+09.11.2025  10:48             1 445 .gitignore
+09.11.2025  20:48             1 496 ai_dala_assistant.py
+09.11.2025  21:33                 0 dir_result.txt
+09.11.2025  20:48                31 notes.txt
+09.11.2025  12:28               302 notion-bridge.service
+09.11.2025  15:36            11 065 notion_bridge.py
+09.11.2025  20:41                52 requirements.txt
+09.11.2025  20:49             1 931 run_ai_dala.py
+09.11.2025  20:52             4 226 run_ai_dala_extended.py
+09.11.2025  11:55                91 start.bat
+09.11.2025  11:55                89 start.sh
+08.11.2025  18:13    <DIR>          venv
+              13 File(s)         21 161 bytes
+               3 Dir(s)  304 684 298 240 bytes free
