@@ -1,4 +1,4 @@
-# notion_bridge.py — Integrated Bridge with Object Tree Indexing
+# notion_bridge.py — Integrated Bridge with Object Tree Indexing + Alias Preview
 from fastapi import FastAPI, Request
 import requests
 import json
@@ -77,6 +77,22 @@ def update_lookup(root_id: str = None, path: str = LOOKUP_PATH):
         json.dump(lookup, f, indent=2)
     print(f"✅ Object tree updated: {len(lookup) - 1} entries saved → {path}")
     return lookup
+
+def get_lookup_data():
+    if not os.path.exists(LOOKUP_PATH):
+        return {}
+    try:
+        with open(LOOKUP_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def get_alias_for_id(object_id: str):
+    lookup = get_lookup_data()
+    for alias, data in lookup.items():
+        if isinstance(data, dict) and data.get("id") == object_id:
+            return alias
+    return None
 
 def resolve_alias(alias_or_id: str):
     if not os.path.exists(LOOKUP_PATH):
@@ -162,10 +178,23 @@ async def handle_notion_action(request: Request):
         return {"status": "error", "message": f"Unknown action: {action}"}
 
     if res.status_code == 200:
+        alias_used = body.get("alias")
+        parent_id = body.get("parent_id")
+        alias_name = alias_used or get_alias_for_id(parent_id)
         try:
-            return {"status": "success", "response": res.json()}
+            return {
+                "status": "success",
+                "alias_used": alias_name,
+                "parent_id": parent_id,
+                "response": res.json()
+            }
         except Exception:
-            return {"status": "success", "message": "Action completed."}
+            return {
+                "status": "success",
+                "alias_used": alias_name,
+                "parent_id": parent_id,
+                "message": "Action completed."
+            }
     else:
         return {"status": "error", "code": res.status_code, "details": res.text}
 
