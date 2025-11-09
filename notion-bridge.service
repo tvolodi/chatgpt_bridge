@@ -1,0 +1,14 @@
+[Unit]
+Description=AI Dala Notion Bridge Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/chatgpt_bridge
+ExecStart=/root/chatgpt_bridge/start.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
