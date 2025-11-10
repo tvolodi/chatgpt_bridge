@@ -105,9 +105,16 @@ describe('ProjectsPage Integration Tests', () => {
     vi.mocked(useProjectStore).mockReturnValue({
       ...mockStore,
       isLoading: true,
+      projects: [], // Empty projects to show loading state
     })
 
-    renderProjectsPage()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProjectsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
 
     expect(screen.getByText('Loading projects...')).toBeInTheDocument()
   })
@@ -118,7 +125,13 @@ describe('ProjectsPage Integration Tests', () => {
       error: 'Failed to load projects',
     })
 
-    renderProjectsPage()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProjectsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
 
     expect(screen.getByText('Failed to load projects')).toBeInTheDocument()
   })
@@ -216,8 +229,8 @@ describe('ProjectsPage Integration Tests', () => {
     const enabledDeleteButton = deleteButtons.find((button: HTMLButtonElement) => !button.disabled)
     await user.click(enabledDeleteButton!)
 
-    // Confirm deletion
-    const confirmButton = screen.getByRole('button', { name: /delete/i })
+    // Confirm deletion - find the Delete button in the modal (not the icon buttons)
+    const confirmButton = screen.getByRole('button', { name: /^Delete$/ })
     await user.click(confirmButton)
 
     expect(mockStore.deleteProject).toHaveBeenCalledWith('project1')
@@ -240,16 +253,24 @@ describe('ProjectsPage Integration Tests', () => {
   it('shows project statistics', () => {
     renderProjectsPage()
 
-    expect(screen.getByText('Files')).toBeInTheDocument()
+    const filesElements = screen.getAllByText('Files')
+    expect(filesElements.length).toBeGreaterThan(0)
   })
 
   it('shows empty state when no projects', () => {
     vi.mocked(useProjectStore).mockReturnValue({
       ...mockStore,
       projects: [],
+      isLoading: false,
     })
 
-    renderProjectsPage()
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ProjectsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
 
     expect(screen.getByText('No projects yet')).toBeInTheDocument()
     expect(screen.getByText('Create your first project to get started organizing your conversations.')).toBeInTheDocument()

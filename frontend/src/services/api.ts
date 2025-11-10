@@ -160,3 +160,54 @@ export const projectsAPI = {
   getProjectStats: () =>
     apiClient.get('/projects/stats/overview'),
 }
+
+// Chat Sessions API
+export const chatSessionsAPI = {
+  // List chat sessions
+  listSessions: (projectId?: string, includeInactive: boolean = false) =>
+    apiClient.get('/chat-sessions', {
+      params: {
+        ...(projectId && { project_id: projectId }),
+        ...(includeInactive && { include_inactive: includeInactive })
+      }
+    }),
+
+  // Get single chat session
+  getSession: (sessionId: string) =>
+    apiClient.get(`/chat-sessions/${sessionId}`),
+
+  // Create chat session
+  createSession: (sessionData: any) =>
+    apiClient.post('/chat-sessions', sessionData),
+
+  // Update chat session
+  updateSession: (sessionId: string, updateData: any) =>
+    apiClient.put(`/chat-sessions/${sessionId}`, updateData),
+
+  // Delete chat session
+  deleteSession: (sessionId: string, force: boolean = false) =>
+    apiClient.delete(`/chat-sessions/${sessionId}`, { params: { force } }),
+
+  // Get session with messages
+  getSessionWithMessages: (sessionId: string) =>
+    apiClient.get(`/chat-sessions/${sessionId}/full`),
+
+  // Add message to session
+  addMessage: (sessionId: string, messageData: any) =>
+    apiClient.post(`/chat-sessions/${sessionId}/messages`, messageData),
+
+  // Get session messages
+  getSessionMessages: (sessionId: string, limit?: number, offset: number = 0) =>
+    apiClient.get(`/chat-sessions/${sessionId}/messages`, {
+      params: {
+        ...(limit && { limit }),
+        offset
+      }
+    }),
+
+  // Get session stats
+  getSessionStats: (projectId?: string) =>
+    apiClient.get('/chat-sessions/stats/summary', {
+      params: projectId ? { project_id: projectId } : {}
+    }),
+}

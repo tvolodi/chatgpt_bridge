@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Menu, X, Settings, User, Search, MessageSquare, FileText, Folder, Zap, ChevronDown, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useProjectStore, ProjectTree } from '../stores/projectStore'
+import { useChatSessionStore } from '../stores/chatSessionStore'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -13,6 +14,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation()
   const { uiState, updateUIState } = useSettingsStore()
   const { currentProject, projectTree, loadProjectTree, setCurrentProject } = useProjectStore()
+  const { sessions, loadSessions, setCurrentSession } = useChatSessionStore()
 
   const sidebarCollapsed = uiState.sidebarCollapsed
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['default']))
@@ -21,10 +23,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     loadProjectTree()
   }, [loadProjectTree])
 
+  useEffect(() => {
+    if (currentProject) {
+      loadSessions(currentProject.id)
+    }
+  }, [currentProject, loadSessions])
+
   const navigationItems = [
     { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/' },
     { id: 'search', label: 'Search', icon: Search, path: '/search' },
     { id: 'files', label: 'Files', icon: FileText, path: '/files' },
+    { id: 'chat-sessions', label: 'Chat Sessions', icon: MessageSquare, path: '/chat-sessions' },
     { id: 'projects', label: 'Projects', icon: Folder, path: '/projects' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ]
@@ -169,6 +178,47 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
+
+            {/* Chat Sessions Section */}
+            {currentProject && (
+              <>
+                <div className="flex items-center justify-between mt-4 mb-2">
+                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                    Chat Sessions
+                  </h3>
+                  <button
+                    onClick={() => handleNavigation('/chat-sessions')}
+                    className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+                  >
+                    <Settings size={14} />
+                  </button>
+                </div>
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {sessions.length > 0 ? (
+                    sessions.slice(0, 10).map((session) => (
+                      <button
+                        key={session.id}
+                        onClick={() => {
+                          setCurrentSession(session)
+                          handleNavigation('/')
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left hover:bg-slate-800 text-slate-300 hover:text-white"
+                      >
+                        <MessageSquare size={16} />
+                        <div className="flex-1 min-w-0">
+                          <span className="truncate text-sm block">{session.title}</span>
+                          <span className="text-xs text-slate-500">{session.message_count} messages</span>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-xs text-slate-500 px-3 py-2">
+                      No chat sessions
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -202,6 +252,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   {activeView === 'chat' && (currentProject ? `Working on ${currentProject.name}` : 'Start a conversation with your AI assistant')}
                   {activeView === 'search' && 'Search through your conversations and files'}
                   {activeView === 'files' && 'Browse and manage your workspace files'}
+                  {activeView === 'chat-sessions' && (currentProject ? `Manage chat sessions in ${currentProject.name}` : 'Select a project to manage chat sessions')}
                   {activeView === 'projects' && 'Organize your work into projects'}
                   {activeView === 'settings' && 'Configure your preferences and settings'}
                 </p>

@@ -4,6 +4,7 @@ import ChatPage from './pages/ChatPage'
 import SearchPage from './pages/SearchPage'
 import FilesPage from './pages/FilesPage'
 import ProjectsPage from './pages/ProjectsPage'
+import ChatSessionsPage from './pages/ChatSessionsPage'
 import SettingsPage from './pages/SettingsPage'
 import './App.css'
 
@@ -16,6 +17,7 @@ function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/files" element={<FilesPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/chat-sessions" element={<ChatSessionsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </MainLayout>
