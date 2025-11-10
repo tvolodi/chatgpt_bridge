@@ -3,6 +3,7 @@ import ChatArea from '../components/ChatArea'
 import ChatInput from '../components/ChatInput'
 import { useChatStore } from '../stores/chatStore'
 import { useUserStateStore } from '../stores/userStateStore'
+import { useProjectStore } from '../stores/projectStore'
 import { chatAPI } from '../services/api'
 
 interface Message {
@@ -14,12 +15,21 @@ interface Message {
 
 export const ChatPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const { messages, addMessage, setMessages, sessionId, setSessionId } = useChatStore()
+  const { messages, addMessage, setMessages, sessionId, setSessionId, clearChat } = useChatStore()
   const { addRecentActivity, updateSession } = useUserStateStore()
+  const { currentProject } = useProjectStore()
+
+  // Clear chat when project changes
+  useEffect(() => {
+    clearChat()
+    setSessionId('') // Force new session creation
+  }, [currentProject?.id, clearChat, setSessionId])
 
   // Initialize chat session
   useEffect(() => {
     const initChat = async () => {
+      if (!currentProject) return
+
       try {
         const response = await chatAPI.createSession()
         setSessionId(response.data.session_id)
@@ -27,7 +37,8 @@ export const ChatPage: React.FC = () => {
         // Update user state with session
         updateSession({
           sessionId: response.data.session_id,
-          lastActivity: new Date()
+          lastActivity: new Date(),
+          projectId: currentProject.id
         })
 
         // Add recent activity
@@ -35,19 +46,23 @@ export const ChatPage: React.FC = () => {
           action: 'start',
           resourceType: 'session',
           resourceId: response.data.session_id,
-          title: 'Started new chat session',
+          title: `Started new chat session in ${currentProject.name}`,
           timestamp: new Date(),
-          metadata: { session_type: 'chat' }
+          metadata: { 
+            session_type: 'chat',
+            project_id: currentProject.id,
+            project_name: currentProject.name
+          }
         })
       } catch (error) {
         console.error('Failed to create session:', error)
       }
     }
 
-    if (!sessionId) {
+    if (!sessionId && currentProject) {
       initChat()
     }
-  }, [sessionId, setSessionId, updateSession, addRecentActivity])
+  }, [sessionId, currentProject, setSessionId, updateSession, addRecentActivity])
 
   const handleSendMessage = async (text: string) => {
     if (!sessionId) return
@@ -65,7 +80,8 @@ export const ChatPage: React.FC = () => {
     // Update session activity
     updateSession({
       lastActivity: new Date(),
-      draftContent: undefined
+      draftContent: undefined,
+      projectId: currentProject?.id
     })
 
     // Add recent activity
@@ -73,9 +89,13 @@ export const ChatPage: React.FC = () => {
       action: 'send',
       resourceType: 'message',
       resourceId: userMessage.id,
-      title: 'Sent message',
+      title: `Sent message in ${currentProject?.name || 'Default Project'}`,
       timestamp: new Date(),
-      metadata: { message_length: text.length }
+      metadata: { 
+        message_length: text.length,
+        project_id: currentProject?.id,
+        project_name: currentProject?.name
+      }
     })
 
     try {
@@ -94,9 +114,13 @@ export const ChatPage: React.FC = () => {
         action: 'receive',
         resourceType: 'message',
         resourceId: assistantMessage.id,
-        title: 'Received AI response',
+        title: `Received AI response in ${currentProject?.name || 'Default Project'}`,
         timestamp: new Date(),
-        metadata: { response_length: response.data.message.length }
+        metadata: { 
+          response_length: response.data.message.length,
+          project_id: currentProject?.id,
+          project_name: currentProject?.name
+        }
       })
     } catch (error) {
       console.error('Failed to send message:', error)

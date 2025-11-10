@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Menu, X, Settings, User, Search, MessageSquare, FileText, Folder, Zap } from 'lucide-react'
+import { Menu, X, Settings, User, Search, MessageSquare, FileText, Folder, Zap, ChevronDown, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useProjectStore, ProjectTree } from '../stores/projectStore'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -11,8 +12,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { uiState, updateUIState } = useSettingsStore()
+  const { currentProject, projectTree, loadProjectTree, setCurrentProject } = useProjectStore()
 
   const sidebarCollapsed = uiState.sidebarCollapsed
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(['default']))
+
+  useEffect(() => {
+    loadProjectTree()
+  }, [loadProjectTree])
 
   const navigationItems = [
     { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/' },
@@ -35,6 +42,66 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const handleNavigation = (path: string) => {
     navigate(path)
+  }
+
+  const toggleProjectExpansion = (projectId: string) => {
+    const newExpanded = new Set(expandedProjects)
+    if (newExpanded.has(projectId)) {
+      newExpanded.delete(projectId)
+    } else {
+      newExpanded.add(projectId)
+    }
+    setExpandedProjects(newExpanded)
+  }
+
+  const handleProjectSelect = (project: any) => {
+    setCurrentProject(project)
+    // Navigate to chat or project workspace
+    navigate('/')
+  }
+
+  const renderProjectTree = (projects: ProjectTree[], level = 0) => {
+    return projects.map((item) => {
+      const isExpanded = expandedProjects.has(item.project.id)
+      const hasChildren = item.children && item.children.length > 0
+      const isSelected = currentProject?.id === item.project.id
+
+      return (
+        <div key={item.project.id}>
+          <button
+            onClick={() => {
+              if (hasChildren) {
+                toggleProjectExpansion(item.project.id)
+              } else {
+                handleProjectSelect(item.project)
+              }
+            }}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
+              isSelected
+                ? 'bg-blue-600 text-white'
+                : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+            } ${level > 0 ? 'ml-4' : ''}`}
+            style={{ paddingLeft: `${12 + level * 16}px` }}
+          >
+            {hasChildren ? (
+              isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+            ) : (
+              <div className="w-4" />
+            )}
+            <Folder size={16} />
+            {!sidebarCollapsed && (
+              <span className="truncate text-sm">{item.project.name}</span>
+            )}
+          </button>
+
+          {hasChildren && isExpanded && (
+            <div>
+              {renderProjectTree(item.children, level + 1)}
+            </div>
+          )}
+        </div>
+      )
+    })
   }
 
   return (
@@ -79,6 +146,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           })}
         </nav>
 
+        {/* Projects Section */}
+        {!sidebarCollapsed && (
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                Projects
+              </h3>
+              <button
+                onClick={() => handleNavigation('/projects')}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+              >
+                <Settings size={14} />
+              </button>
+            </div>
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {projectTree.length > 0 ? (
+                renderProjectTree(projectTree)
+              ) : (
+                <div className="text-xs text-slate-500 px-3 py-2">
+                  No projects
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* User Section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
           <div className={`flex items-center gap-3 ${sidebarCollapsed ? 'justify-center' : ''}`}>
@@ -104,13 +197,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <h2 className="text-xl font-semibold">
                 {navigationItems.find(item => item.id === activeView)?.label || 'Dashboard'}
               </h2>
-              <p className="text-sm text-slate-400">
-                {activeView === 'chat' && 'Start a conversation with your AI assistant'}
-                {activeView === 'search' && 'Search through your conversations and files'}
-                {activeView === 'files' && 'Browse and manage your workspace files'}
-                {activeView === 'projects' && 'Organize your work into projects'}
-                {activeView === 'settings' && 'Configure your preferences and settings'}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-slate-400">
+                  {activeView === 'chat' && (currentProject ? `Working on ${currentProject.name}` : 'Start a conversation with your AI assistant')}
+                  {activeView === 'search' && 'Search through your conversations and files'}
+                  {activeView === 'files' && 'Browse and manage your workspace files'}
+                  {activeView === 'projects' && 'Organize your work into projects'}
+                  {activeView === 'settings' && 'Configure your preferences and settings'}
+                </p>
+                {currentProject && activeView === 'chat' && (
+                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                    {currentProject.name}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -119,7 +219,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <button className="p-2 rounded-lg hover:bg-slate-800 transition-colors">
                   <Zap size={20} className="text-yellow-400" />
                 </button>
-                <button className="p-2 rounded-lg hover:bg-slate-800 transition-colors">
+                <button 
+                  onClick={() => handleNavigation('/settings')}
+                  className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
                   <Settings size={20} />
                 </button>
               </div>

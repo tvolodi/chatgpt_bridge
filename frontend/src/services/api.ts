@@ -47,19 +47,19 @@ export const filesAPI = {
 // Settings API
 export const settingsAPI = {
   getSettings: () =>
-    apiClient.get('/settings'),
+    apiClient.get('/settings/user/default/effective'),
 
   updateSettings: (settings: any) =>
-    apiClient.put('/settings', settings),
+    apiClient.put('/settings/user/default', settings),
 
   getSettingsByCategory: (category: string) =>
-    apiClient.get(`/settings/${category}`),
+    apiClient.get(`/settings/categories/${category}`),
 
   updateSettingsByCategory: (category: string, settings: any) =>
-    apiClient.put(`/settings/${category}`, settings),
+    apiClient.put(`/settings/categories/${category}`, settings),
 
   exportSettings: () =>
-    apiClient.get('/settings/export'),
+    apiClient.get('/settings/default/export'),
 
   importSettings: (settings: any) =>
     apiClient.post('/settings/import', settings),
@@ -126,4 +126,37 @@ export const userStateAPI = {
 
   getAnalytics: (userId: string) =>
     apiClient.get('/user-state/analytics', { params: { user_id: userId } }),
+}
+
+// Projects API
+export const projectsAPI = {
+  // List projects
+  listProjects: (parentId?: string) =>
+    apiClient.get('/projects', { params: parentId ? { parent_id: parentId } : {} }),
+
+  // Get single project
+  getProject: (projectId: string) =>
+    apiClient.get(`/projects/${projectId}`),
+
+  // Create project
+  createProject: (projectData: any) =>
+    apiClient.post('/projects', projectData),
+
+  // Update project
+  updateProject: (projectId: string, updateData: any) =>
+    apiClient.put(`/projects/${projectId}`, updateData),
+
+  // Delete project
+  deleteProject: (projectId: string, force: boolean = false) =>
+    apiClient.delete(`/projects/${projectId}`, { params: { force } }),
+
+  // Project tree
+  getProjectTree: (projectId?: string) =>
+    projectId
+      ? apiClient.get(`/projects/${projectId}/tree`)
+      : apiClient.get('/projects/tree/all'),
+
+  // Project stats
+  getProjectStats: () =>
+    apiClient.get('/projects/stats/overview'),
 }

@@ -23,9 +23,11 @@ class Settings:
     # CORS Configuration
     CORS_ORIGINS: list = [
         "http://localhost:3000",  # React dev server
+        "http://localhost:3001",  # React dev server (alternative port)
         "http://localhost:5173",  # Vite dev server
         "http://localhost:8000",  # API itself
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
         "http://127.0.0.1:5173",
     ]
     CORS_CREDENTIALS: bool = True
