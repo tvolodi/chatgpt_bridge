@@ -74,16 +74,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       const isExpanded = expandedProjects.has(item.project.id)
       const hasChildren = item.children && item.children.length > 0
       const isSelected = currentProject?.id === item.project.id
+      const projectSessions = sessions.filter(session => session.project_id === item.project.id)
 
       return (
         <div key={item.project.id}>
           <button
             onClick={() => {
-              if (hasChildren) {
+              if (hasChildren || projectSessions.length > 0) {
                 toggleProjectExpansion(item.project.id)
-              } else {
-                handleProjectSelect(item.project)
               }
+              handleProjectSelect(item.project)
             }}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
               isSelected
@@ -92,7 +92,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             } ${level > 0 ? 'ml-4' : ''}`}
             style={{ paddingLeft: `${12 + level * 16}px` }}
           >
-            {hasChildren ? (
+            {(hasChildren || projectSessions.length > 0) ? (
               isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
             ) : (
               <div className="w-4" />
@@ -103,9 +103,36 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             )}
           </button>
 
+          {/* Project children */}
           {hasChildren && isExpanded && (
             <div>
               {renderProjectTree(item.children, level + 1)}
+            </div>
+          )}
+
+          {/* Chat sessions for this project */}
+          {isExpanded && projectSessions.length > 0 && (
+            <div>
+              {projectSessions.slice(0, 10).map((session) => (
+                <button
+                  key={session.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCurrentSession(session)
+                    handleNavigation('/')
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left hover:bg-slate-800 ${
+                    isSelected ? 'text-slate-200 hover:text-white' : 'text-slate-300 hover:text-white'
+                  }`}
+                  style={{ paddingLeft: `${28 + level * 16}px` }}
+                >
+                  <MessageSquare size={14} />
+                  <div className="flex-1 min-w-0">
+                    <span className="truncate text-xs block">{session.title}</span>
+                    <span className="text-xs text-slate-500">{session.message_count} messages</span>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -169,7 +196,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Settings size={14} />
               </button>
             </div>
-            <div className="space-y-1 max-h-64 overflow-y-auto">
+            <div className="space-y-1 max-h-96 overflow-y-auto">
               {projectTree.length > 0 ? (
                 renderProjectTree(projectTree)
               ) : (
@@ -178,47 +205,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
-
-            {/* Chat Sessions Section */}
-            {currentProject && (
-              <>
-                <div className="flex items-center justify-between mt-4 mb-2">
-                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                    Chat Sessions
-                  </h3>
-                  <button
-                    onClick={() => handleNavigation('/chat-sessions')}
-                    className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
-                  >
-                    <Settings size={14} />
-                  </button>
-                </div>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {sessions.length > 0 ? (
-                    sessions.slice(0, 10).map((session) => (
-                      <button
-                        key={session.id}
-                        onClick={() => {
-                          setCurrentSession(session)
-                          handleNavigation('/')
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left hover:bg-slate-800 text-slate-300 hover:text-white"
-                      >
-                        <MessageSquare size={16} />
-                        <div className="flex-1 min-w-0">
-                          <span className="truncate text-sm block">{session.title}</span>
-                          <span className="text-xs text-slate-500">{session.message_count} messages</span>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="text-xs text-slate-500 px-3 py-2">
-                      No chat sessions
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
         )}
 

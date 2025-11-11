@@ -29,6 +29,7 @@ export interface SessionState {
   lastActivity: Date
   activeProject?: string
   activeSession?: string
+  selectedProviderId?: string
   openTabs: string[]
   draftContent?: string
   clipboardHistory: string[]

@@ -211,3 +211,46 @@ export const chatSessionsAPI = {
       params: projectId ? { project_id: projectId } : {}
     }),
 }
+
+// Providers API
+export const providersAPI = {
+  // List providers
+  listProviders: () =>
+    apiClient.get('/providers'),
+
+  // Get single provider
+  getProvider: (providerId: string) =>
+    apiClient.get(`/providers/${providerId}`),
+
+  // Create provider
+  createProvider: (providerData: any) =>
+    apiClient.post('/providers', providerData),
+
+  // Update provider
+  updateProvider: (providerId: string, updateData: any) =>
+    apiClient.put(`/providers/${providerId}`, updateData),
+
+  // Delete provider
+  deleteProvider: (providerId: string) =>
+    apiClient.delete(`/providers/${providerId}`),
+
+  // Get provider config
+  getProviderConfig: (providerId: string) =>
+    apiClient.get(`/providers/${providerId}/config`),
+
+  // Update provider config
+  updateProviderConfig: (providerId: string, configData: any) =>
+    apiClient.put(`/providers/${providerId}/config`, configData),
+
+  // Delete provider config
+  deleteProviderConfig: (providerId: string) =>
+    apiClient.delete(`/providers/${providerId}/config`),
+
+  // Validate provider config
+  validateProviderConfig: (providerId: string) =>
+    apiClient.post(`/providers/${providerId}/validate`),
+
+  // Get available models for provider
+  getProviderModels: (providerId: string) =>
+    apiClient.get(`/providers/${providerId}/models`),
+}

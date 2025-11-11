@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import ChatArea from '../components/ChatArea'
 import ChatInput from '../components/ChatInput'
+import { ProviderSelector } from '../components/ProviderSelector'
 import { useChatStore } from '../stores/chatStore'
 import { useUserStateStore } from '../stores/userStateStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useChatSessionStore } from '../stores/chatSessionStore'
+import { useProvidersStore } from '../stores/providersStore'
 import { chatSessionsAPI } from '../services/api'
 
 interface Message {
@@ -17,15 +19,22 @@ interface Message {
 export const ChatPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const { messages, addMessage, setMessages, clearChat } = useChatStore()
-  const { addRecentActivity, updateSession } = useUserStateStore()
+  const { addRecentActivity, updateSession, session } = useUserStateStore()
   const { currentProject } = useProjectStore()
   const { currentSession, setCurrentSession, getSessionWithMessages, addMessage: addSessionMessage } = useChatSessionStore()
+  const { getActiveProviders } = useProvidersStore()
 
-  // Clear chat when project changes
+  // Initialize default provider
   useEffect(() => {
-    clearChat()
-    setCurrentSession(null)
-  }, [currentProject?.id, clearChat, setCurrentSession])
+    const activeProviders = getActiveProviders();
+    if (activeProviders.length > 0 && !session?.selectedProviderId) {
+      updateSession({ selectedProviderId: activeProviders[0].id });
+    }
+  }, [getActiveProviders, session?.selectedProviderId, updateSession]);
+
+  const handleProviderChange = (providerId: string) => {
+    updateSession({ selectedProviderId: providerId });
+  };
 
   // Initialize or load chat session
   useEffect(() => {
@@ -129,12 +138,33 @@ export const ChatPage: React.FC = () => {
     })
 
     try {
-      // TODO: Implement AI response via chat API
-      // For now, just simulate a response
+      // Get the selected provider and use its first available model
+      const activeProviders = getActiveProviders();
+      const selectedProvider = activeProviders.find(p => p.id === session?.selectedProviderId) || activeProviders[0];
+
+      if (!selectedProvider) {
+        const errorMessage: Message = {
+          role: 'assistant',
+          content: 'No AI provider available. Please configure a provider in Settings.',
+          id: `msg-${Date.now()}-error`,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(errorMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      // Use the first available model from the selected provider
+      const selectedModel = selectedProvider.models?.[0]?.name;
+
+      // TODO: Replace with actual chat API call
+      // const response = await chatAPI.sendMessage(currentSession.id, text, selectedModel);
+
+      // For now, simulate response with provider info
       setTimeout(() => {
         const assistantMessage: Message = {
           role: 'assistant',
-          content: 'This is a placeholder response. AI integration to be implemented.',
+          content: `This is a response from ${selectedProvider.displayName} using model ${selectedModel || 'default'}. AI integration to be implemented.`,
           id: `msg-${Date.now()}-resp`,
           timestamp: new Date().toISOString(),
         }
@@ -151,12 +181,14 @@ export const ChatPage: React.FC = () => {
           action: 'receive',
           resourceType: 'message',
           resourceId: assistantMessage.id,
-          title: `Received AI response in ${currentProject?.name || 'Default Project'}`,
+          title: `Received AI response from ${selectedProvider.displayName} in ${currentProject?.name || 'Default Project'}`,
           timestamp: new Date(),
-          metadata: { 
+          metadata: {
             response_length: assistantMessage.content.length,
             project_id: currentProject?.id,
-            project_name: currentProject?.name
+            project_name: currentProject?.name,
+            provider: selectedProvider.displayName,
+            model: selectedModel
           }
         })
       }, 1000)
@@ -176,6 +208,19 @@ export const ChatPage: React.FC = () => {
   
   return (
     <div className="flex flex-col h-full">
+      {/* Chat header with provider selector */}
+      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-slate-200">Chat</h2>
+            <ProviderSelector
+              selectedProviderId={session?.selectedProviderId}
+              onProviderChange={handleProviderChange}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Chat area */}
       <div className="flex-1 flex flex-col">
         <ChatArea messages={messages} isLoading={isLoading} />

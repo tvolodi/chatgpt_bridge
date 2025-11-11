@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Save, Download, Upload, RotateCcw, User, Palette, Bell, Monitor, Globe } from 'lucide-react'
+import { Save, Download, Upload, RotateCcw, User, Palette, Bell, Monitor, Globe, Settings as SettingsIcon } from 'lucide-react'
 import { useSettingsStore, UserPreferences } from '../stores/settingsStore'
 import { settingsAPI } from '../services/api'
 import { ProfileSettings } from '../components/settings/ProfileSettings'
@@ -7,8 +7,9 @@ import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { NotificationSettings } from '../components/settings/NotificationSettings'
 import { SystemSettings } from '../components/settings/SystemSettings'
 import { AccountSettings } from '../components/settings/AccountSettings'
+import { ProviderManagementPage } from './ProviderManagementPage'
 
-type SettingsTab = 'profile' | 'appearance' | 'notifications' | 'system' | 'account'
+type SettingsTab = 'profile' | 'appearance' | 'notifications' | 'system' | 'account' | 'providers'
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
@@ -172,6 +173,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'profile' as SettingsTab, label: 'Profile', icon: User },
     { id: 'appearance' as SettingsTab, label: 'Appearance', icon: Palette },
     { id: 'notifications' as SettingsTab, label: 'Notifications', icon: Bell },
+    { id: 'providers' as SettingsTab, label: 'Providers', icon: SettingsIcon },
     { id: 'system' as SettingsTab, label: 'System', icon: Monitor },
     { id: 'account' as SettingsTab, label: 'Account', icon: Globe }
   ]
@@ -252,6 +254,7 @@ export const SettingsPage: React.FC = () => {
             {activeTab === 'profile' && <ProfileSettings preferences={preferences} onUpdate={updatePreferences} />}
             {activeTab === 'appearance' && <AppearanceSettings preferences={preferences} uiState={uiState} onUpdatePreferences={updatePreferences} onUpdateUI={updateUIState} />}
             {activeTab === 'notifications' && <NotificationSettings preferences={preferences} onUpdate={updatePreferences} />}
+            {activeTab === 'providers' && <ProviderManagementPage />}
             {activeTab === 'system' && <SystemSettings preferences={preferences} onUpdate={updatePreferences} />}
             {activeTab === 'account' && <AccountSettings />}
           </div>

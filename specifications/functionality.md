@@ -62,7 +62,7 @@ The application must fulfill the following functional requirements:
     - At application launch on the main screen user sees the last chat session he was working on last time.  
 
 3. **User Settings Page**
-    Status: To be implemented
+    Status: Implemented
    - Users can access a settings page to configure preferences.
    - User can set API keys for different AI providers (e.g., OpenAI, Anthropic) used by the application.
    - API keys are securely stored in environment variables and not hardcoded.
@@ -79,8 +79,8 @@ The application must fulfill the following functional requirements:
    - Responses are displayed in the chat interface.
    - The application handles API errors gracefully and informs the user.
 
-4. **Projects**
-    Status: To be implemented
+5. **Projects**
+    Status: Implemented
     - Project can contain other projects as sub-projects (nested structure).
     - Each project has its own workspace containing files and chat sessions.
     - Project files are common for all chat sessions within the project.
@@ -93,8 +93,8 @@ The application must fulfill the following functional requirements:
     - Users can create new projects, specifying a unique name.    - Users can delete projects, which removes all associated files and chat histories.
     - Project can contain multiple chat sessions, each with its own history.
 
-3. **Chat Sessions**
-    Status: Not implemented
+6. **Chat Sessions**
+    Status: Implemented
     - Chat sessions has its own directory inside the project workspace.
     - Chat sessions store their message histories in separate files within their directories.
     - Chat session has its own files stored in its directory.
@@ -107,21 +107,47 @@ The application must fulfill the following functional requirements:
     - The "Chat Sessions" page displays:
         - History of messages in the current chat session.
         - Controls to create, delete, and rename chat session.
+    
+    Update 1:
+    Status: Implemented
+    - Chat sessions are inside the project workspace.
+    - Chat session list (of the project) is displayed in the sidebar on the main screen under the current project. So to get to the session user first selects the project in the project tree on the sidebar, then selects the session from the list of sessions of the current project.
 
-4. **Chat Interface Prototype**
+7. **Chat Interface Prototype**
     Status: Implemented   
    - The chat interface displays messages from both the user and the AI in a conversational format.
     - Users can input messages via a text input field.
     - There is a time stamp displayed for each message.
 
-5. ** Chat Interface**
+8. ** Chat Interface**
     Status: To be implemented
     - The message input field supports multi-line text.
     - User can add attachments (files/images) to messages selecting them in the chat interface.
     - The chat interface supports markdown formatting for messages (bold, italics, code blocks, lists).
     - The chat interface supports displaying images and file attachments inline within the conversation.
 
-4. **Backend API Endpoints**
-    Status: To be implemented
+9. **Provider Management**
+    Status: Not started
+   - The application supports multiple AI providers (e.g., OpenAI, Anthropic).
+   - Users can select the desired AI provider from a dropdown menu in the chat interface.
+   - The application manages API keys and authentication for each provider securely.
+   - Users can switch between providers seamlessly without interrupting the chat session.
+   - Users can add, update, and remove provider on the Provider Management page accessible from the Settings page.
+
+10. **Chat Page Provider Integration**
+    Status: Implemented
+   - The chat page includes a provider selector dropdown in the header area.
+   - The provider selector displays the currently selected AI provider (e.g., "OpenAI", "Anthropic").
+   - Users can click the provider selector to open a dropdown menu showing all available providers.
+   - Each provider option in the dropdown displays:
+       - Provider name (e.g., "OpenAI", "Anthropic")
+       - Provider description (e.g., "OpenAI GPT models including GPT-4, GPT-3.5, and DALL-E")
+       - Number of available models for that provider
+   - Users can select a different provider from the dropdown to switch the active AI provider.
+   - The provider selector shows a visual indicator (e.g., checkmark) next to the currently selected provider.
+   - Provider switching is immediate and doesn't interrupt the current chat session.
+   - The selected provider persists across chat sessions and application restarts.
+   - If a provider becomes unavailable (e.g., API key not configured), it is visually indicated in the dropdown.
+   - The provider selector integrates with the providers store to automatically update when providers are added, modified, or removed via the Provider Management page.
 
 
