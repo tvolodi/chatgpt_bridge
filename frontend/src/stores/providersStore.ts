@@ -71,6 +71,7 @@ interface ProvidersState {
 
   // API Actions
   loadProviders: () => Promise<void>
+  loadProviderConfigs: () => Promise<void>
   createProvider: (data: CreateProviderData) => Promise<AIProvider>
   updateProvider: (id: string, data: UpdateProviderData) => Promise<AIProvider>
   deleteProvider: (id: string) => Promise<void>
@@ -179,6 +180,9 @@ export const useProvidersStore = create<ProvidersState>()(
 
           set({ providers: defaultProviders, isLoading: false })
 
+          // Load provider configs from backend
+          await get().loadProviderConfigs()
+
           // Set first active provider as current if none selected
           const state = get()
           if (!state.currentProvider && defaultProviders.length > 0) {
@@ -188,6 +192,44 @@ export const useProvidersStore = create<ProvidersState>()(
         } catch (error) {
           set({ error: error instanceof Error ? error.message : 'Unknown error', isLoading: false })
           throw error
+        }
+      },
+
+      loadProviderConfigs: async () => {
+        try {
+          console.log('[Frontend] Loading provider configs from backend')
+          const state = get()
+          const updatedConfigs: Record<string, ProviderConfig> = { ...state.providerConfigs }
+          
+          // Load config for each provider
+          for (const provider of state.providers) {
+            try {
+              const response = await fetch(`http://localhost:8000/api/settings/api-providers/${provider.id}`)
+              if (response.ok) {
+                const providerSettings = await response.json()
+                console.log(`[Frontend] Loaded config for provider ${provider.id}:`, providerSettings)
+                
+                // Convert backend response to ProviderConfig
+                if (providerSettings && providerSettings.api_key) {
+                  updatedConfigs[provider.id] = {
+                    providerId: provider.id,
+                    apiKey: providerSettings.api_key || '',
+                    baseUrl: providerSettings.base_url,
+                    organizationId: updatedConfigs[provider.id]?.organizationId, // Keep local value
+                    projectId: updatedConfigs[provider.id]?.projectId, // Keep local value
+                  }
+                }
+              }
+            } catch (error) {
+              console.log(`[Frontend] Could not load config for ${provider.id}:`, error)
+            }
+          }
+          
+          // Update store with all loaded configs
+          set({ providerConfigs: updatedConfigs })
+        } catch (error) {
+          console.log('[Frontend] Error loading provider configs:', error)
+          // Don't set error state since configs are optional
         }
       },
 
@@ -279,12 +321,56 @@ export const useProvidersStore = create<ProvidersState>()(
 
       // Config Actions
       saveProviderConfig: async (config: ProviderConfig) => {
-        const state = get()
-        const updatedConfigs = {
-          ...state.providerConfigs,
-          [config.providerId]: config
+        set({ isLoading: true, error: null })
+        try {
+          // Call backend API to save provider settings (including API key to .env)
+          console.log('[Frontend] Saving provider config:', { providerId: config.providerId, hasApiKey: !!config.apiKey })
+          const url = `http://localhost:8000/api/settings/api-providers/${config.providerId}`
+          console.log('[Frontend] Calling PUT', url)
+          
+          const response = await fetch(
+            url,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                provider_name: config.providerId,
+                api_key: config.apiKey,
+                base_url: config.baseUrl,
+                // Note: organization_id and project_id are frontend-only fields
+                // The backend APIProviderSettings model doesn't support them
+              })
+            }
+          )
+
+          console.log('[Frontend] Response status:', response.status, response.statusText)
+          
+          if (!response.ok) {
+            const errorText = await response.text()
+            console.log('[Frontend] Error response body:', errorText)
+            console.error('[Frontend] ❌ HTTP Error:', response.status, response.statusText, errorText)
+            // Don't throw - just update error state without re-throwing
+            set({ isLoading: false, error: `Failed to save provider config: ${response.statusText}` })
+            return // Exit without throwing
+          }
+
+          const responseData = await response.json()
+          console.log('[Frontend] Success response:', responseData)
+
+          // Update local store with the new config
+          const state = get()
+          const updatedConfigs = {
+            ...state.providerConfigs,
+            [config.providerId]: config
+          }
+          set({ providerConfigs: updatedConfigs, isLoading: false })
+          console.log('[Frontend] ✅ Provider config saved successfully')
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+          console.error('[Frontend] ❌ Exception error saving provider config:', errorMsg)
+          set({ error: errorMsg, isLoading: false })
+          // Don't re-throw - let the caller handle it
         }
-        set({ providerConfigs: updatedConfigs })
       },
 
       getProviderConfig: (providerId: string) => {

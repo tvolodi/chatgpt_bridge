@@ -285,6 +285,9 @@ async def update_api_provider_settings(
     - Returns success status
     """
     try:
+        print(f"DEBUG: Received PUT /api-providers/{provider_name}")
+        print(f"DEBUG: provider_settings = {provider_settings}")
+        print(f"DEBUG: provider_settings.api_key = {'*' * 10 if provider_settings.api_key else 'NONE'}")
         success = settings_service.update_api_provider_settings(provider_name, provider_settings, user_id)
         if not success:
             raise HTTPException(status_code=404, detail="Settings not found")
@@ -292,6 +295,9 @@ async def update_api_provider_settings(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG: Exception occurred: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to update API provider settings: {str(e)}")
 
 

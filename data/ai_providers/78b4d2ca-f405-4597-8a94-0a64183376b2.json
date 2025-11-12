@@ -1,0 +1,15 @@
+{
+  "id": "78b4d2ca-f405-4597-8a94-0a64183376b2",
+  "name": "RefreshTestProvider",
+  "provider_type": "openai",
+  "base_url": null,
+  "organization_id": null,
+  "is_active": true,
+  "rate_limit_requests": 60,
+  "rate_limit_tokens": 100000,
+  "timeout_seconds": 30,
+  "retry_attempts": 3,
+  "created_at": "2025-11-12T21:47:24.551243",
+  "updated_at": "2025-11-12T21:47:24.551243",
+  "metadata": {}
+}

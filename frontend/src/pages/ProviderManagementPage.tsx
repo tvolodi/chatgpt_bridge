@@ -9,6 +9,7 @@ export const ProviderManagementPage: React.FC = () => {
     providers,
     providerConfigs,
     loadProviders,
+    loadProviderConfigs,
     createProvider,
     updateProvider,
     deleteProvider,
@@ -39,8 +40,11 @@ export const ProviderManagementPage: React.FC = () => {
   });
 
   useEffect(() => {
-    loadProviders();
-  }, [loadProviders]);
+    loadProviders().then(() => {
+      // Load provider configs after providers are loaded
+      loadProviderConfigs()
+    })
+  }, [loadProviders, loadProviderConfigs]);
 
   const resetForm = () => {
     setFormData({

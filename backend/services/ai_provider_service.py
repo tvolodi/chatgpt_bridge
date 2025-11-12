@@ -43,6 +43,10 @@ class AIProviderService:
         self.data_dir = Path(data_dir)
         self.providers_dir = self.data_dir / "ai_providers"
         self.providers_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Set .env file path - use current working directory (where server is started)
+        # This is more reliable than calculating from __file__
+        self.env_file_path = Path.cwd() / ".env"
 
         # In-memory cache for providers and models
         self._providers_cache: Dict[UUID, AIProvider] = {}
@@ -130,20 +134,20 @@ class AIProviderService:
             provider_name: Name of the provider (e.g., 'OpenAI', 'Anthropic')
             api_key: The API key to save
         """
-        env_file_path = Path('.env')
-        
-        # Create .env file if it doesn't exist
-        if not env_file_path.exists():
-            env_file_path.touch()
-        
-        # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
-        env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_')}"
-        
-        # Set the environment variable in the .env file
         try:
-            set_key(str(env_file_path), env_var_name, api_key)
+            # Create .env file if it doesn't exist
+            if not self.env_file_path.exists():
+                self.env_file_path.touch()
+            
+            # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
+            env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_')}"
+            
+            # Set the environment variable in the .env file
+            set_key(str(self.env_file_path), env_var_name, api_key)
         except Exception as e:
-            print(f"Warning: Could not save API key to .env file: {e}")
+            print(f"ERROR: Could not save API key to .env file: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _load_api_key_from_env(self, provider_name: str) -> Optional[str]:
         """
@@ -164,10 +168,15 @@ class AIProviderService:
             return api_key
         
         # Try to load from .env file directly
-        env_file_path = Path('.env')
-        if env_file_path.exists():
-            dotenv_values_dict = dotenv_values(str(env_file_path))
-            return dotenv_values_dict.get(env_var_name)
+        if self.env_file_path.exists():
+            dotenv_values_dict = dotenv_values(str(self.env_file_path))
+            api_key = dotenv_values_dict.get(env_var_name)
+            if api_key:
+                # Strip surrounding quotes that set_key() adds
+                # set_key() wraps values in quotes, but dotenv_values returns them with quotes
+                if api_key.startswith(("'", '"')) and api_key.endswith(("'", '"')):
+                    api_key = api_key[1:-1]
+                return api_key
         
         return None
 

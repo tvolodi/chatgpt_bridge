@@ -1,0 +1,15 @@
+{
+  "id": "82a36352-db34-46c1-92d6-6018610495e6",
+  "name": "UpdateCycleTestProvider",
+  "provider_type": "openai",
+  "base_url": null,
+  "organization_id": null,
+  "is_active": true,
+  "rate_limit_requests": 60,
+  "rate_limit_tokens": 100000,
+  "timeout_seconds": 30,
+  "retry_attempts": 3,
+  "created_at": "2025-11-12T21:47:24.716875",
+  "updated_at": "2025-11-12T21:47:24.726152",
+  "metadata": {}
+}

@@ -1,9 +1,18 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api'
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Separate client for user-state API (doesn't use /api prefix)
+export const userStateClient = axios.create({
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,23 +55,36 @@ export const filesAPI = {
 
 // Settings API
 export const settingsAPI = {
-  getSettings: () =>
-    apiClient.get('/settings/user/default/effective'),
+  getSettings: (userId?: string) =>
+    userId
+      ? apiClient.get(`/settings/user/${userId}/effective`)
+      : apiClient.get('/settings/default'),
 
-  updateSettings: (settings: any) =>
-    apiClient.put('/settings/user/default', settings),
+  updateSettings: (settings: any, userId?: string) => {
+    // For now, we'll update default settings if no userId provided
+    // In a real app, you'd want to update user-specific settings
+    const settingsId = userId || 'default';
+    return apiClient.put(`/settings/${settingsId}`, settings);
+  },
 
-  getSettingsByCategory: (category: string) =>
-    apiClient.get(`/settings/categories/${category}`),
+  getSettingsByCategory: (category: string, userId?: string) =>
+    apiClient.get(`/settings/categories/${category}`, {
+      params: userId ? { user_id: userId } : {}
+    }),
 
-  updateSettingsByCategory: (category: string, settings: any) =>
-    apiClient.put(`/settings/categories/${category}`, settings),
+  updateSettingsByCategory: (category: string, settings: any, userId?: string) =>
+    apiClient.put(`/settings/categories/${category}`, settings, {
+      params: userId ? { user_id: userId } : {}
+    }),
 
-  exportSettings: () =>
-    apiClient.get('/settings/default/export'),
+  exportSettings: (settingsId?: string) =>
+    apiClient.get(`/settings/${settingsId || 'default'}/export`),
 
   importSettings: (settings: any) =>
     apiClient.post('/settings/import', settings),
+
+  validateSettings: (settings: any) =>
+    apiClient.post('/settings/validate', settings),
 }
 
 // Search API
@@ -84,48 +106,48 @@ export const searchAPI = {
 export const userStateAPI = {
   // Preferences
   getPreferences: (userId: string) =>
-    apiClient.get('/user-state/preferences', { params: { user_id: userId } }),
+    userStateClient.get('/user-state/preferences', { params: { user_id: userId } }),
 
   updatePreferences: (userId: string, preferences: any) =>
-    apiClient.put('/user-state/preferences', preferences, { params: { user_id: userId } }),
+    userStateClient.put('/user-state/preferences', preferences, { params: { user_id: userId } }),
 
   // UI State
   getUIState: (userId: string) =>
-    apiClient.get('/user-state/ui-state', { params: { user_id: userId } }),
+    userStateClient.get('/user-state/ui-state', { params: { user_id: userId } }),
 
   updateUIState: (userId: string, uiState: any) =>
-    apiClient.put('/user-state/ui-state', uiState, { params: { user_id: userId } }),
+    userStateClient.put('/user-state/ui-state', uiState, { params: { user_id: userId } }),
 
   // Session State
   getSessionState: (userId: string, sessionId: string) =>
-    apiClient.get('/user-state/session/${sessionId}', { params: { user_id: userId } }),
+    userStateClient.get(`/user-state/session/${sessionId}`, { params: { user_id: userId } }),
 
   updateSessionState: (userId: string, sessionState: any) =>
-    apiClient.put('/user-state/session', sessionState, { params: { user_id: userId } }),
+    userStateClient.put('/user-state/session', sessionState, { params: { user_id: userId } }),
 
   // Recent Activity
   addRecentActivity: (userId: string, activity: any) =>
-    apiClient.post('/user-state/activity', activity, { params: { user_id: userId } }),
+    userStateClient.post('/user-state/activity', activity, { params: { user_id: userId } }),
 
   getRecentActivities: (userId: string, limit?: number) =>
-    apiClient.get('/user-state/activity', { params: { user_id: userId, limit } }),
+    userStateClient.get('/user-state/activity', { params: { user_id: userId, limit } }),
 
   // Bookmarks
   addBookmark: (userId: string, bookmark: any) =>
-    apiClient.post('/user-state/bookmarks', bookmark, { params: { user_id: userId } }),
+    userStateClient.post('/user-state/bookmarks', bookmark, { params: { user_id: userId } }),
 
   getBookmarks: (userId: string) =>
-    apiClient.get('/user-state/bookmarks', { params: { user_id: userId } }),
+    userStateClient.get('/user-state/bookmarks', { params: { user_id: userId } }),
 
   deleteBookmark: (userId: string, bookmarkId: string) =>
-    apiClient.delete('/user-state/bookmarks/${bookmarkId}', { params: { user_id: userId } }),
+    userStateClient.delete(`/user-state/bookmarks/${bookmarkId}`, { params: { user_id: userId } }),
 
   // Backup and Analytics
   createBackup: (userId: string) =>
-    apiClient.post('/user-state/backup', null, { params: { user_id: userId } }),
+    userStateClient.post('/user-state/backup', null, { params: { user_id: userId } }),
 
   getAnalytics: (userId: string) =>
-    apiClient.get('/user-state/analytics', { params: { user_id: userId } }),
+    userStateClient.get('/user-state/analytics', { params: { user_id: userId } }),
 }
 
 // Projects API
@@ -216,41 +238,41 @@ export const chatSessionsAPI = {
 export const providersAPI = {
   // List providers
   listProviders: () =>
-    apiClient.get('/providers'),
+    apiClient.get('/ai-providers'),
 
   // Get single provider
   getProvider: (providerId: string) =>
-    apiClient.get(`/providers/${providerId}`),
+    apiClient.get(`/ai-providers/${providerId}`),
 
   // Create provider
   createProvider: (providerData: any) =>
-    apiClient.post('/providers', providerData),
+    apiClient.post('/ai-providers', providerData),
 
   // Update provider
   updateProvider: (providerId: string, updateData: any) =>
-    apiClient.put(`/providers/${providerId}`, updateData),
+    apiClient.put(`/ai-providers/${providerId}`, updateData),
 
   // Delete provider
   deleteProvider: (providerId: string) =>
-    apiClient.delete(`/providers/${providerId}`),
+    apiClient.delete(`/ai-providers/${providerId}`),
 
-  // Get provider config
+  // Get provider config - NOTE: This should use settings API, not providers API
   getProviderConfig: (providerId: string) =>
-    apiClient.get(`/providers/${providerId}/config`),
+    apiClient.get(`/settings/api-providers/${providerId}`),
 
-  // Update provider config
+  // Update provider config - NOTE: This should use settings API, not providers API
   updateProviderConfig: (providerId: string, configData: any) =>
-    apiClient.put(`/providers/${providerId}/config`, configData),
+    apiClient.put(`/settings/api-providers/${providerId}`, configData),
 
-  // Delete provider config
+  // Delete provider config - NOTE: This should use settings API, not providers API
   deleteProviderConfig: (providerId: string) =>
-    apiClient.delete(`/providers/${providerId}/config`),
+    apiClient.delete(`/settings/api-providers/${providerId}`),
 
-  // Validate provider config
-  validateProviderConfig: (providerId: string) =>
-    apiClient.post(`/providers/${providerId}/validate`),
+  // Validate provider config - NOTE: Backend doesn't have this endpoint, removing
+  // validateProviderConfig: (providerId: string) =>
+  //   apiClient.post(`/providers/${providerId}/validate`),
 
-  // Get available models for provider
-  getProviderModels: (providerId: string) =>
-    apiClient.get(`/providers/${providerId}/models`),
+  // Get available models for provider - NOTE: Backend serves this as global endpoint
+  getProviderModels: () =>
+    apiClient.get('/ai-providers/models/available'),
 }

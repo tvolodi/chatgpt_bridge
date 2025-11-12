@@ -6,7 +6,7 @@ import { providersAPI } from '../../services/api'
 // Mock server setup
 const server = setupServer(
   // Mock providers endpoints
-  http.get('http://localhost:8000/api/providers', () => {
+  http.get('http://localhost:8000/api/ai-providers', () => {
     return HttpResponse.json([
       {
         id: 'openai-1',
@@ -62,7 +62,7 @@ const server = setupServer(
     ])
   }),
 
-  http.get('http://localhost:8000/api/providers/openai-1', () => {
+  http.get('http://localhost:8000/api/ai-providers/openai-1', () => {
     return HttpResponse.json({
       id: 'openai-1',
       name: 'openai',
@@ -86,7 +86,7 @@ const server = setupServer(
     })
   }),
 
-  http.post('http://localhost:8000/api/providers', () => {
+  http.post('http://localhost:8000/api/ai-providers', () => {
     return HttpResponse.json({
       id: 'new-provider-1',
       name: 'custom-provider',
@@ -100,7 +100,7 @@ const server = setupServer(
     })
   }),
 
-  http.put('http://localhost:8000/api/providers/openai-1', () => {
+  http.put('http://localhost:8000/api/ai-providers/openai-1', () => {
     return HttpResponse.json({
       id: 'openai-1',
       name: 'openai',
@@ -114,11 +114,11 @@ const server = setupServer(
     })
   }),
 
-  http.delete('http://localhost:8000/api/providers/openai-1', () => {
+  http.delete('http://localhost:8000/api/ai-providers/openai-1', () => {
     return HttpResponse.json({ message: 'Provider deleted successfully' })
   }),
 
-  http.get('http://localhost:8000/api/providers/openai-1/config', () => {
+  http.get('http://localhost:8000/api/settings/api-providers/openai-1', () => {
     return HttpResponse.json({
       providerId: 'openai-1',
       apiKey: 'sk-test123456789',
@@ -130,19 +130,21 @@ const server = setupServer(
     })
   }),
 
-  http.put('http://localhost:8000/api/providers/openai-1/config', () => {
+  http.put('http://localhost:8000/api/settings/api-providers/openai-1', () => {
     return HttpResponse.json({ message: 'Provider config updated successfully' })
   }),
 
-  http.delete('http://localhost:8000/api/providers/openai-1/config', () => {
+  http.delete('http://localhost:8000/api/settings/api-providers/openai-1', () => {
     return HttpResponse.json({ message: 'Provider config deleted successfully' })
   }),
 
-  http.post('http://localhost:8000/api/providers/openai-1/validate', () => {
-    return HttpResponse.json({ valid: true, message: 'Configuration is valid' })
-  }),
+  // Validate provider config - NOTE: Backend doesn't have this endpoint, removing
+  // http.post('http://localhost:8000/api/providers/openai-1/validate', () => {
+  //   return HttpResponse.json({ valid: true, message: 'Configuration is valid' })
+  // }),
 
-  http.get('http://localhost:8000/api/providers/openai-1/models', () => {
+  // Get available models for provider - NOTE: Backend serves this as global endpoint
+  http.get('http://localhost:8000/api/ai-providers/models/available', () => {
     return HttpResponse.json([
       {
         id: 'gpt-4',
@@ -193,7 +195,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle API errors gracefully', async () => {
       server.use(
-        http.get('http://localhost:8000/api/providers', () => {
+        http.get('http://localhost:8000/api/ai-providers', () => {
           return HttpResponse.json({ error: 'Internal server error' }, { status: 500 })
         })
       )
@@ -216,7 +218,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle provider not found', async () => {
       server.use(
-        http.get('http://localhost:8000/api/providers/nonexistent', () => {
+        http.get('http://localhost:8000/api/ai-providers/nonexistent', () => {
           return HttpResponse.json({ error: 'Provider not found' }, { status: 404 })
         })
       )
@@ -246,7 +248,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle validation errors', async () => {
       server.use(
-        http.post('http://localhost:8000/api/providers', () => {
+        http.post('http://localhost:8000/api/ai-providers', () => {
           return HttpResponse.json({ error: 'Invalid provider data' }, { status: 400 })
         })
       )
@@ -273,7 +275,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle update validation errors', async () => {
       server.use(
-        http.put('http://localhost:8000/api/providers/openai-1', () => {
+        http.put('http://localhost:8000/api/ai-providers/openai-1', () => {
           return HttpResponse.json({ error: 'Invalid update data' }, { status: 400 })
         })
       )
@@ -292,7 +294,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle provider not found during deletion', async () => {
       server.use(
-        http.delete('http://localhost:8000/api/providers/nonexistent', () => {
+        http.delete('http://localhost:8000/api/ai-providers/nonexistent', () => {
           return HttpResponse.json({ error: 'Provider not found' }, { status: 404 })
         })
       )
@@ -315,7 +317,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle config not found', async () => {
       server.use(
-        http.get('http://localhost:8000/api/providers/no-config/config', () => {
+        http.get('http://localhost:8000/api/settings/api-providers/no-config', () => {
           return HttpResponse.json({ error: 'Config not found' }, { status: 404 })
         })
       )
@@ -341,7 +343,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle config validation errors', async () => {
       server.use(
-        http.put('http://localhost:8000/api/providers/openai-1/config', () => {
+        http.put('http://localhost:8000/api/settings/api-providers/openai-1', () => {
           return HttpResponse.json({ error: 'Invalid config data' }, { status: 400 })
         })
       )
@@ -360,7 +362,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle config not found during deletion', async () => {
       server.use(
-        http.delete('http://localhost:8000/api/providers/no-config/config', () => {
+        http.delete('http://localhost:8000/api/settings/api-providers/no-config', () => {
           return HttpResponse.json({ error: 'Config not found' }, { status: 404 })
         })
       )
@@ -369,31 +371,11 @@ describe('Providers API Integration Tests', () => {
     })
   })
 
-  describe('validateProviderConfig', () => {
-    it('should validate provider config successfully', async () => {
-      const response = await providersAPI.validateProviderConfig('openai-1')
 
-      expect(response.data).toBeDefined()
-      expect(response.data.valid).toBe(true)
-      expect(response.data.message).toBe('Configuration is valid')
-    })
-
-    it('should handle invalid configuration', async () => {
-      server.use(
-        http.post('http://localhost:8000/api/providers/openai-1/validate', () => {
-          return HttpResponse.json({ valid: false, message: 'Invalid API key' }, { status: 400 })
-        })
-      )
-
-      const response = await providersAPI.validateProviderConfig('openai-1')
-      expect(response.data.valid).toBe(false)
-      expect(response.data.message).toBe('Invalid API key')
-    })
-  })
 
   describe('getProviderModels', () => {
     it('should fetch provider models successfully', async () => {
-      const response = await providersAPI.getProviderModels('openai-1')
+      const response = await providersAPI.getProviderModels()
 
       expect(response.data).toBeDefined()
       expect(Array.isArray(response.data)).toBe(true)
@@ -408,12 +390,12 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle provider not found when fetching models', async () => {
       server.use(
-        http.get('http://localhost:8000/api/providers/nonexistent/models', () => {
+        http.get('http://localhost:8000/api/ai-providers/models/available', () => {
           return HttpResponse.json({ error: 'Provider not found' }, { status: 404 })
         })
       )
 
-      await expect(providersAPI.getProviderModels('nonexistent')).rejects.toThrow()
+      await expect(providersAPI.getProviderModels()).rejects.toThrow()
     })
   })
 
@@ -431,12 +413,12 @@ describe('Providers API Integration Tests', () => {
       const configResponse = await providersAPI.getProviderConfig('openai-1')
       expect(configResponse.data.apiKey).toBe('sk-test123456789')
 
-      // 4. Validate config
-      const validateResponse = await providersAPI.validateProviderConfig('openai-1')
-      expect(validateResponse.data.valid).toBe(true)
+      // 4. Validate config - NOTE: Backend doesn't have this endpoint, skipping
+      // const validateResponse = await providersAPI.validateProviderConfig('openai-1')
+      // expect(validateResponse.data.valid).toBe(true)
 
       // 5. Get provider models
-      const modelsResponse = await providersAPI.getProviderModels('openai-1')
+      const modelsResponse = await providersAPI.getProviderModels()
       expect(modelsResponse.data).toHaveLength(2)
 
       // 6. Update provider
@@ -460,7 +442,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle network errors gracefully', async () => {
       server.use(
-        http.get('http://localhost:8000/api/providers', () => {
+        http.get('http://localhost:8000/api/ai-providers', () => {
           return HttpResponse.error()
         })
       )
@@ -470,7 +452,7 @@ describe('Providers API Integration Tests', () => {
 
     it('should handle timeout scenarios', async () => {
       server.use(
-        http.post('http://localhost:8000/api/providers', async () => {
+        http.post('http://localhost:8000/api/ai-providers', async () => {
           await new Promise(resolve => setTimeout(resolve, 100))
           return HttpResponse.json({ id: 'timeout-test' })
         })
@@ -495,7 +477,7 @@ describe('Providers API Integration Tests', () => {
       const operations = [
         providersAPI.getProvider('openai-1'),
         providersAPI.getProviderConfig('openai-1'),
-        providersAPI.getProviderModels('openai-1')
+        providersAPI.getProviderModels()
       ]
 
       const results = await Promise.all(operations)

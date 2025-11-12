@@ -21,10 +21,15 @@ from ..services.ai_provider_service import AIProviderService
 # Create the router
 router = APIRouter(prefix="/api/ai-providers", tags=["ai-providers"])
 
-# Dependency to get the AI provider service
+# Global singleton instance of the AI provider service
+_ai_provider_service_instance: Optional[AIProviderService] = None
+
 def get_ai_provider_service() -> AIProviderService:
-    """Dependency to get the AI provider service instance."""
-    return AIProviderService()
+    """Dependency to get the AI provider service instance (singleton pattern)."""
+    global _ai_provider_service_instance
+    if _ai_provider_service_instance is None:
+        _ai_provider_service_instance = AIProviderService()
+    return _ai_provider_service_instance
 
 
 @router.post("/", response_model=AIProvider, status_code=201)

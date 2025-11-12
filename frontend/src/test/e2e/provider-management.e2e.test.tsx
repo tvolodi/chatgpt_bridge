@@ -11,7 +11,7 @@ import { useProvidersStore } from '../../stores/providersStore'
 // Mock MSW server for API calls
 const server = setupServer(
   // Default handlers - will be overridden in specific tests
-  http.get('http://localhost:8000/api/providers', () => {
+  http.get('http://localhost:8000/api/ai-providers', () => {
     return HttpResponse.json([
       {
         id: 'openai-1',
@@ -42,7 +42,33 @@ const server = setupServer(
       }
     ])
   }),
-  http.post('http://localhost:8000/api/providers', () => {
+  http.get('http://localhost:8000/api/settings/api-providers/openai', () => {
+    return HttpResponse.json({
+      provider_name: 'openai',
+      api_key: 'openai-test-key',
+      base_url: 'https://api.openai.com/v1',
+      timeout: 60,
+      max_retries: 3,
+      rate_limit_requests: 60,
+      rate_limit_window: 60,
+      enabled: true,
+      priority: 1
+    })
+  }),
+  http.get('http://localhost:8000/api/settings/api-providers/anthropic', () => {
+    return HttpResponse.json({
+      provider_name: 'anthropic',
+      api_key: 'sk-ant-api03-test-key',
+      base_url: 'https://api.anthropic.com',
+      timeout: 60,
+      max_retries: 3,
+      rate_limit_requests: 60,
+      rate_limit_window: 60,
+      enabled: true,
+      priority: 2
+    })
+  }),
+  http.post('http://localhost:8000/api/ai-providers', () => {
     return HttpResponse.json({
       id: 'test-provider-1',
       name: 'test-provider',
@@ -55,7 +81,7 @@ const server = setupServer(
       updatedAt: '2025-01-10T00:00:00Z'
     })
   }),
-  http.put('http://localhost:8000/api/providers/openai-1', () => {
+  http.put('http://localhost:8000/api/ai-providers/openai-1', () => {
     return HttpResponse.json({
       id: 'openai-1',
       name: 'openai',
@@ -71,7 +97,7 @@ const server = setupServer(
       updatedAt: '2025-01-10T00:00:00Z'
     })
   }),
-  http.delete('http://localhost:8000/api/providers/anthropic-1', () => {
+  http.delete('http://localhost:8000/api/ai-providers/anthropic-1', () => {
     return HttpResponse.json({ success: true })
   })
 )
@@ -225,7 +251,10 @@ describe('Provider Management E2E Tests', () => {
         expect(screen.queryByText('Edit Provider')).not.toBeInTheDocument()
       })
 
-      expect(screen.getByText('OpenAI (Updated)')).toBeInTheDocument()
+      // Wait for the provider list to update
+      await waitFor(() => {
+        expect(screen.getByText('OpenAI (Updated)')).toBeInTheDocument()
+      })
 
       // Restore original method
       useProvidersStore.setState({ updateProvider: originalUpdateProvider })

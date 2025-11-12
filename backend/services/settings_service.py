@@ -13,6 +13,7 @@ from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 import uuid
 import hashlib
+from dotenv import set_key, dotenv_values
 
 from backend.models.settings import (
     Settings, SettingsCreate, SettingsUpdate, SettingsSummary,
@@ -48,15 +49,17 @@ class SettingsService:
         self.settings_path.mkdir(parents=True, exist_ok=True)
         self.backups_path.mkdir(parents=True, exist_ok=True)
 
+        # In-memory cache (must be initialized BEFORE _ensure_default_settings)
+        self._settings_cache: Dict[str, Settings] = {}
+        
         # Initialize default settings if they don't exist
         self._ensure_default_settings()
 
-        # In-memory cache
-        self._settings_cache: Dict[str, Settings] = {}
+        # Load all settings into cache
         self._load_settings_cache()
 
     def _ensure_default_settings(self):
-        """Ensure default settings exist"""
+        """Ensure default settings exist and return them"""
         default_settings_path = self.settings_path / "default.json"
 
         if not default_settings_path.exists():
@@ -74,6 +77,18 @@ class SettingsService:
             )
 
             self._save_settings_to_file(default_settings, default_settings_path)
+            self._settings_cache["default"] = default_settings
+            return default_settings
+        
+        # Load from cache if available
+        if "default" in self._settings_cache:
+            return self._settings_cache["default"]
+        
+        # Load from file
+        default_settings = self._load_settings_from_file(default_settings_path)
+        if default_settings:
+            self._settings_cache["default"] = default_settings
+        return default_settings
 
     def _load_settings_cache(self):
         """Load all settings into memory cache"""
@@ -186,7 +201,12 @@ class SettingsService:
         Returns:
             Default settings
         """
-        return self._settings_cache.get("default", self._ensure_default_settings())
+        # Try to get from cache first
+        if "default" in self._settings_cache:
+            return self._settings_cache["default"]
+        
+        # If not in cache, ensure it exists and return it
+        return self._ensure_default_settings()
 
     def get_user_settings(self, user_id: str) -> Optional[Settings]:
         """
@@ -477,6 +497,11 @@ class SettingsService:
 
         for provider in settings.api_providers:
             if provider.provider_name == provider_name and provider.enabled:
+                # Try to load API key from .env file for security
+                # If a key is stored in .env, use that instead of the in-memory value
+                api_key = self._load_api_key_from_env(provider_name)
+                if api_key:
+                    provider.api_key = api_key
                 return provider
 
         return None
@@ -507,6 +532,10 @@ class SettingsService:
                 file_path = self._get_settings_file_path(settings.id)
                 self._save_settings_to_file(settings, file_path)
                 self._settings_cache[settings.id] = settings
+                
+                # Save API key to .env file for secure storage
+                if provider_settings.api_key:
+                    self._save_api_key_to_env(provider_name, provider_settings.api_key)
 
                 return True
 
@@ -518,8 +547,68 @@ class SettingsService:
         file_path = self._get_settings_file_path(settings.id)
         self._save_settings_to_file(settings, file_path)
         self._settings_cache[settings.id] = settings
+        
+        # Save API key to .env file for secure storage
+        if provider_settings.api_key:
+            self._save_api_key_to_env(provider_name, provider_settings.api_key)
 
         return True
+
+    def _save_api_key_to_env(self, provider_name: str, api_key: str):
+        """
+        Save API key to .env file securely.
+        
+        Args:
+            provider_name: Name of the provider (e.g., 'openai', 'anthropic')
+            api_key: The API key to save
+        """
+        try:
+            env_file_path = Path('.env')
+            # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
+            env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_').replace('-', '_')}"
+            
+            print(f"DEBUG: Saving API key to .env")
+            print(f"DEBUG: env_file_path = {env_file_path}")
+            print(f"DEBUG: env_var_name = {env_var_name}")
+            print(f"DEBUG: api_key = {'*' * 10}")
+            
+            # Set the environment variable in the .env file
+            set_key(str(env_file_path), env_var_name, api_key)
+            print(f"DEBUG: Successfully saved API key to .env")
+        except Exception as e:
+            print(f"WARNING: Could not save API key to .env file: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _load_api_key_from_env(self, provider_name: str) -> Optional[str]:
+        """
+        Load API key from .env file.
+        
+        Args:
+            provider_name: Name of the provider (e.g., 'openai', 'anthropic')
+            
+        Returns:
+            API key if found in .env file, None otherwise
+        """
+        try:
+            env_file_path = Path('.env')
+            if not env_file_path.exists():
+                return None
+                
+            # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
+            env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_').replace('-', '_')}"
+            
+            # Load environment variables from .env file
+            env_values = dotenv_values(str(env_file_path))
+            api_key = env_values.get(env_var_name)
+            
+            if api_key:
+                print(f"DEBUG: Loaded API key from .env for {provider_name}")
+            
+            return api_key
+        except Exception as e:
+            print(f"WARNING: Could not load API key from .env file: {e}")
+            return None
 
     def reset_to_defaults(self, settings_id: str) -> Optional[Settings]:
         """

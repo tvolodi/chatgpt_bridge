@@ -137,7 +137,7 @@ class APIProviderSettings(BaseModel):
     enabled: bool = Field(default=True, description="Whether this provider is enabled")
     priority: int = Field(default=1, ge=1, le=10, description="Provider priority (lower = higher priority)")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra='ignore')
 
 
 class FileProcessingSettings(BaseModel):
