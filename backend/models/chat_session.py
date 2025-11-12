@@ -32,7 +32,7 @@ class ChatSession(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID = Field(default_factory=uuid4, description="Unique identifier for the chat session")
-    project_id: UUID = Field(..., description="ID of the project this session belongs to")
+    project_id: Optional[UUID] = Field(None, description="ID of the project this session belongs to (optional for backwards compatibility)")
     title: str = Field(..., min_length=1, max_length=200, description="Display title for the session")
     description: Optional[str] = Field(None, max_length=1000, description="Optional description of the session")
     created_at: datetime = Field(default_factory=datetime.now, description="When the session was created")
@@ -48,7 +48,7 @@ class ChatSession(BaseModel):
 class ChatSessionCreate(BaseModel):
     """Model for creating a new chat session."""
 
-    project_id: UUID = Field(..., description="ID of the project this session belongs to")
+    project_id: Optional[UUID] = Field(None, description="ID of the project this session belongs to (optional for backwards compatibility)")
     title: str = Field(..., min_length=1, max_length=200, description="Display title for the session")
     description: Optional[str] = Field(None, max_length=1000, description="Optional description of the session")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional session metadata")

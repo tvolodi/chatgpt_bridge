@@ -62,6 +62,21 @@ class ConversationService:
         """Get the file path for a conversation's context."""
         return self.conversations_dir / f"{session_id}.json"
 
+    def _find_session_project_id(self, session_id: UUID) -> Optional[str]:
+        """
+        Find a session and return its project_id.
+        Searches in both nested and flat directory structures.
+        """
+        # First try flat structure
+        session = self.chat_session_service.get_session(session_id)
+        if session:
+            return str(session.project_id)
+        
+        # If not found, search nested structure
+        # This would require additional logic to scan all projects
+        # For now, rely on the flat structure fallback in ChatSessionService
+        return None
+
     def _load_conversation_contexts(self):
         """Load all conversation contexts from disk."""
         if self.conversations_dir.exists():
@@ -96,7 +111,8 @@ class ConversationService:
         """Get existing context or create new one for a session."""
         if session_id not in self._context_cache:
             # Get message count from chat session service
-            session = self.chat_session_service.get_session(session_id)
+            # Try to load from both nested and flat structures
+            session = self.chat_session_service.get_session(session_id, project_id=None)
             if not session:
                 raise ValueError(f"Chat session {session_id} not found")
 
@@ -139,9 +155,12 @@ class ConversationService:
 
         # Add conversation history if requested
         if include_history:
-            history_messages = self.chat_session_service.get_session_messages(
+            # Find project_id for the session
+            project_id = self._find_session_project_id(session_id)
+            history_messages = self.chat_session_service.get_messages(
                 session_id,
-                limit=max_history_messages or self._settings.max_history_messages
+                limit=max_history_messages or self._settings.max_history_messages,
+                project_id=project_id
             )
 
             for msg in history_messages:
@@ -218,6 +237,9 @@ class ConversationService:
                     session_id=request.session_id
                 )
 
+            # Get project_id for nested structure
+            project_id = str(session.project_id) if session.project_id else None
+
             # Get or create conversation context
             context = self._get_or_create_context(request.session_id)
 
@@ -269,7 +291,7 @@ class ConversationService:
                 content=request.message,
                 metadata={"conversation": True}
             )
-            user_message = self.chat_session_service.add_message(request.session_id, user_message_data)
+            user_message = self.chat_session_service.add_message(request.session_id, user_message_data, project_id)
 
             # Create AI response message in chat session
             ai_message_data = MessageCreate(
@@ -283,7 +305,7 @@ class ConversationService:
                     "finish_reason": ai_response.finish_reason
                 }
             )
-            ai_message = self.chat_session_service.add_message(request.session_id, ai_message_data)
+            ai_message = self.chat_session_service.add_message(request.session_id, ai_message_data, project_id)
 
             # Update conversation context
             response_time = time.time() - start_time
@@ -350,11 +372,15 @@ class ConversationService:
         # Get conversation context
         context = self._get_or_create_context(session_id)
 
+        # Find project_id for the session
+        project_id = self._find_session_project_id(session_id)
+
         # Get messages from chat session service
-        messages = self.chat_session_service.get_session_messages(
+        messages = self.chat_session_service.get_messages(
             session_id,
             limit=limit,
-            offset=offset
+            offset=offset,
+            project_id=project_id
         )
 
         # Convert to conversation messages
@@ -380,7 +406,8 @@ class ConversationService:
             conversation_messages.append(conv_msg)
 
         # Check if there are more messages
-        total_messages = self.chat_session_service.get_session(session_id).message_count
+        session = self.chat_session_service.get_session(session_id, project_id)
+        total_messages = session.message_count if session else 0
         has_more = (offset or 0) + len(messages) < total_messages
 
         return ConversationHistory(

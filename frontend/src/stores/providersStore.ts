@@ -318,10 +318,14 @@ export const useProvidersStore = create<ProvidersState>()(
     }),
     {
       name: 'ai-providers',
-      partialize: (state) => ({
-        currentProvider: state.currentProvider,
-        providerConfigs: state.providerConfigs
+      // SECURITY: Intentionally NOT persisting providerConfigs which contain API keys
+      // API keys are stored on backend only (.env file), never in browser localStorage
+      // Without explicit partialize, Zustand persist will save the entire state by default,
+      // but we rely on the backend to NOT include API keys when sending provider configs
+      // Client-side code never reads/writes API keys directly
+      partialize: (state: any) => ({
+        currentProvider: state.currentProvider
       })
-    }
+    } as any
   )
 )

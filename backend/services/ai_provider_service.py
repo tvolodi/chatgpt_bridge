@@ -7,6 +7,7 @@ handling communication with external AI APIs.
 
 import asyncio
 import json
+import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,6 +16,7 @@ from uuid import UUID
 
 import aiohttp
 from aiohttp import ClientTimeout
+from dotenv import load_dotenv, dotenv_values, set_key
 
 from ..models.ai_provider import (
     AIProvider, AIProviderCreate, AIProviderUpdate, AIModel, AIRequest, AIResponse,
@@ -91,15 +93,23 @@ class AIProviderService:
                         data['id'] = UUID(data['id'])
                         data['created_at'] = datetime.fromisoformat(data['created_at'])
                         data['updated_at'] = datetime.fromisoformat(data['updated_at'])
+                        
+                        # Load API key from .env file if it exists
+                        provider_name = data.get('name', '')
+                        api_key = self._load_api_key_from_env(provider_name)
+                        if api_key:
+                            data['api_key'] = api_key
+                        
                         provider = AIProvider(**data)
                         self._providers_cache[provider.id] = provider
                 except (json.JSONDecodeError, OSError, ValueError):
                     continue
 
     def _save_provider(self, provider: AIProvider):
-        """Save a provider configuration to disk."""
+        """Save a provider configuration to disk (excluding API key for security)."""
         provider_file = self._get_provider_file(provider.id)
-        data = provider.model_dump()
+        # Exclude api_key from disk storage - it should only be in environment variables
+        data = provider.model_dump(exclude={'api_key'})
         # Convert UUID and datetime objects to serializable formats
         data['id'] = str(data['id'])
         data['created_at'] = data['created_at'].isoformat()
@@ -107,6 +117,59 @@ class AIProviderService:
 
         with open(provider_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        # Save API key to .env file (if present)
+        if provider.api_key:
+            self._save_api_key_to_env(provider.name, provider.api_key)
+
+    def _save_api_key_to_env(self, provider_name: str, api_key: str):
+        """
+        Save API key to .env file securely.
+        
+        Args:
+            provider_name: Name of the provider (e.g., 'OpenAI', 'Anthropic')
+            api_key: The API key to save
+        """
+        env_file_path = Path('.env')
+        
+        # Create .env file if it doesn't exist
+        if not env_file_path.exists():
+            env_file_path.touch()
+        
+        # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
+        env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_')}"
+        
+        # Set the environment variable in the .env file
+        try:
+            set_key(str(env_file_path), env_var_name, api_key)
+        except Exception as e:
+            print(f"Warning: Could not save API key to .env file: {e}")
+    
+    def _load_api_key_from_env(self, provider_name: str) -> Optional[str]:
+        """
+        Load API key from .env file.
+        
+        Args:
+            provider_name: Name of the provider (e.g., 'OpenAI', 'Anthropic')
+            
+        Returns:
+            The API key if found, None otherwise
+        """
+        # Generate environment variable name: PROVIDER_API_KEY_<PROVIDER_NAME>
+        env_var_name = f"PROVIDER_API_KEY_{provider_name.upper().replace(' ', '_')}"
+        
+        # Try to get from environment (already loaded by dotenv)
+        api_key = os.getenv(env_var_name)
+        if api_key:
+            return api_key
+        
+        # Try to load from .env file directly
+        env_file_path = Path('.env')
+        if env_file_path.exists():
+            dotenv_values_dict = dotenv_values(str(env_file_path))
+            return dotenv_values_dict.get(env_var_name)
+        
+        return None
 
     def _load_models(self):
         """Load available AI models for all providers."""

@@ -51,14 +51,16 @@ async def create_chat_session(
 @router.get("/{session_id}", response_model=ChatSession)
 async def get_chat_session(
     session_id: UUID,
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSession:
     """
     Get a chat session by ID.
 
     - **session_id**: UUID of the chat session to retrieve
+    - **project_id**: Optional project ID for nested directory structure
     """
-    session = service.get_session(session_id)
+    session = service.get_session(session_id, project_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
     return session
@@ -87,19 +89,21 @@ async def list_chat_sessions(
 async def update_chat_session(
     session_id: UUID,
     update_data: ChatSessionUpdate,
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSession:
     """
     Update an existing chat session.
 
     - **session_id**: UUID of the chat session to update
+    - **project_id**: Optional project ID for nested directory structure
     - **title**: Optional new title (1-200 characters)
     - **description**: Optional new description (max 1000 characters)
     - **is_active**: Optional active status
     - **metadata**: Optional updated metadata
     """
     try:
-        session = service.update_session(session_id, update_data)
+        session = service.update_session(session_id, update_data, project_id)
         if not session:
             raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
         return session
@@ -115,16 +119,18 @@ async def update_chat_session(
 async def delete_chat_session(
     session_id: UUID,
     force: bool = Query(False, description="Force deletion even with messages"),
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> JSONResponse:
     """
     Delete a chat session and all its messages.
 
     - **session_id**: UUID of the chat session to delete
+    - **project_id**: Optional project ID for nested directory structure
     - **force**: Force deletion even if session has messages (default: false)
     """
     try:
-        deleted = service.delete_session(session_id, force=force)
+        deleted = service.delete_session(session_id, force=force, project_id=project_id)
         if not deleted:
             raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
         return JSONResponse(
@@ -143,18 +149,20 @@ async def delete_chat_session(
 async def add_message_to_session(
     session_id: UUID,
     message_data: MessageCreate,
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> Message:
     """
     Add a message to a chat session.
 
     - **session_id**: UUID of the chat session
+    - **project_id**: Optional project ID for nested directory structure
     - **role**: Role of the message sender (user, assistant, system)
     - **content**: The message content
     - **metadata**: Optional additional metadata
     """
     try:
-        message = service.add_message(session_id, message_data)
+        message = service.add_message(session_id, message_data, project_id)
         return message
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -167,17 +175,19 @@ async def get_session_messages(
     session_id: UUID,
     limit: Optional[int] = Query(None, ge=1, le=1000, description="Maximum number of messages to return"),
     offset: int = Query(0, ge=0, description="Number of messages to skip"),
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> List[Message]:
     """
     Get messages for a chat session.
 
     - **session_id**: UUID of the chat session
+    - **project_id**: Optional project ID for nested directory structure
     - **limit**: Optional limit on number of messages (1-1000)
     - **offset**: Number of messages to skip from the beginning
     """
     try:
-        messages = service.get_messages(session_id, limit=limit, offset=offset)
+        messages = service.get_messages(session_id, limit=limit, offset=offset, project_id=project_id)
         return messages
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -188,15 +198,17 @@ async def get_session_messages(
 @router.get("/{session_id}/full", response_model=ChatSessionWithMessages)
 async def get_session_with_messages(
     session_id: UUID,
+    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSessionWithMessages:
     """
     Get a chat session with its full message history.
 
     - **session_id**: UUID of the chat session to retrieve
+    - **project_id**: Optional project ID for nested directory structure
     """
     try:
-        session_with_messages = service.get_session_with_messages(session_id)
+        session_with_messages = service.get_session_with_messages(session_id, project_id)
         if not session_with_messages:
             raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
         return session_with_messages

@@ -15,13 +15,17 @@ from backend.models.project import (
 class ProjectService:
     """Service for managing projects, nested hierarchies, and workspaces"""
 
-    def __init__(self, base_path: str = None):
+    def __init__(self, base_path: str = None, data_dir: str = None):
         """
         Initialize project service
 
         Args:
             base_path: Base directory for storing projects. Defaults to user's home directory.
+            data_dir: Alias for base_path for backwards compatibility. If provided, overrides base_path.
         """
+        # Support both base_path and data_dir parameter names for backwards compatibility
+        if data_dir is not None:
+            base_path = data_dir
         if base_path is None:
             base_path = os.path.join(os.path.expanduser("~"), "AI_Chat_Assistant_Projects")
         self.base_path = Path(base_path)

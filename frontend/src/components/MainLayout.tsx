@@ -185,6 +185,49 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Projects Section */}
         {!sidebarCollapsed && (
           <div className="px-4 pb-4">
+            {/* Main Chat Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">
+                  Main Chat
+                </h3>
+              </div>
+              <div className="space-y-1">
+                {projectTree.length > 0 && projectTree[0]?.project?.id === 'default' && (
+                  (() => {
+                    const defaultProjectSessions = sessions.filter(
+                      session => session.project_id === 'default'
+                    )
+                    return defaultProjectSessions.length > 0 ? (
+                      defaultProjectSessions.slice(0, 10).map((session) => (
+                        <button
+                          key={session.id}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCurrentSession(session)
+                            handleNavigation('/')
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left hover:bg-slate-800 text-slate-300 hover:text-white`}
+                          style={{ paddingLeft: `12px` }}
+                        >
+                          <MessageSquare size={14} />
+                          <div className="flex-1 min-w-0">
+                            <span className="truncate text-xs block">{session.title}</span>
+                            <span className="text-xs text-slate-500">{session.message_count} messages</span>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-xs text-slate-500 px-3 py-2">
+                        No sessions yet
+                      </div>
+                    )
+                  })()
+                )}
+              </div>
+            </div>
+
+            {/* Projects Section */}
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Projects
@@ -197,11 +240,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </button>
             </div>
             <div className="space-y-1 max-h-96 overflow-y-auto">
-              {projectTree.length > 0 ? (
-                renderProjectTree(projectTree)
+              {projectTree.length > 1 || (projectTree.length > 0 && projectTree[0]?.project?.id !== 'default') ? (
+                renderProjectTree(
+                  projectTree.filter((p) => p.project.id !== 'default'),
+                  0
+                )
               ) : (
                 <div className="text-xs text-slate-500 px-3 py-2">
-                  No projects
+                  No additional projects
                 </div>
               )}
             </div>
