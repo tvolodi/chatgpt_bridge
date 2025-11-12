@@ -38,7 +38,7 @@ app.add_middleware(
 # Include routers
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(projects.router)
-app.include_router(chat_sessions.router)
+app.include_router(chat_sessions.router, prefix="/api/projects", tags=["chat-sessions"])
 app.include_router(ai_providers.router)
 app.include_router(conversations.router)
 app.include_router(file_management.router, prefix="/api/files", tags=["file-management"])

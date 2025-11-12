@@ -33,8 +33,8 @@ class TestChatSessionService:
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
-    def test_create_session(self):
-        """Test creating a new chat session."""
+    def test_create_session_with_project_id(self):
+        """Test creating a new chat session requires project_id."""
         project_id = uuid4()
         session_data = ChatSessionCreate(
             project_id=project_id,
@@ -57,33 +57,46 @@ class TestChatSessionService:
         assert isinstance(session.updated_at, datetime)
 
         # Verify persistence
-        loaded_session = self.service.get_session(session.id)
+        loaded_session = self.service.get_session(session.id, str(project_id))
         assert loaded_session is not None
         assert loaded_session.id == session.id
         assert loaded_session.title == session.title
 
-    def test_get_session(self):
-        """Test retrieving a chat session by ID."""
-        # Create a session first
+    def test_create_session_without_project_id_fails(self):
+        """Test that creating a session without project_id fails."""
         session_data = ChatSessionCreate(
-            project_id=uuid4(),
+            project_id=None,
+            title="Test Session"
+        )
+
+        with pytest.raises(ValueError, match="project_id is required"):
+            self.service.create_session(session_data)
+
+    def test_get_session_requires_project_id(self):
+        """Test that retrieving a session requires project_id."""
+        project_id = uuid4()
+        session_data = ChatSessionCreate(
+            project_id=project_id,
             title="Test Session"
         )
         created_session = self.service.create_session(session_data)
 
-        # Retrieve the session
-        retrieved_session = self.service.get_session(created_session.id)
+        # Should fail without project_id
+        with pytest.raises(ValueError, match="project_id is required"):
+            self.service.get_session(created_session.id, None)
 
+        # Should succeed with project_id
+        retrieved_session = self.service.get_session(created_session.id, str(project_id))
         assert retrieved_session is not None
         assert retrieved_session.id == created_session.id
         assert retrieved_session.title == created_session.title
 
         # Test retrieving non-existent session
         non_existent_id = uuid4()
-        assert self.service.get_session(non_existent_id) is None
+        assert self.service.get_session(non_existent_id, str(project_id)) is None
 
-    def test_list_sessions(self):
-        """Test listing chat sessions with filtering."""
+    def test_list_sessions_requires_project_id(self):
+        """Test that listing sessions requires project_id."""
         project1_id = uuid4()
         project2_id = uuid4()
 
@@ -101,25 +114,30 @@ class TestChatSessionService:
             title="Session 3"
         ))
 
-        # Test list all sessions
-        all_sessions = self.service.list_sessions()
-        assert len(all_sessions) == 3
-        assert all(isinstance(s, ChatSessionSummary) for s in all_sessions)
+        # Test list all sessions - requires project_id
+        with pytest.raises(ValueError, match="project_id is required"):
+            self.service.list_sessions()
 
-        # Test filter by project
+        # Test filter by project - should return only sessions in that project
         project1_sessions = self.service.list_sessions(project_id=project1_id)
         assert len(project1_sessions) == 2
         assert all(s.project_id == project1_id for s in project1_sessions)
 
+        # Test filter by project 2
+        project2_sessions = self.service.list_sessions(project_id=project2_id)
+        assert len(project2_sessions) == 1
+        assert all(s.project_id == project2_id for s in project2_sessions)
+
         # Test include inactive (all are active by default)
-        all_including_inactive = self.service.list_sessions(include_inactive=True)
-        assert len(all_including_inactive) == 3
+        project1_including_inactive = self.service.list_sessions(project_id=project1_id, include_inactive=True)
+        assert len(project1_including_inactive) == 2
 
     def test_update_session(self):
         """Test updating an existing chat session."""
         # Create a session
+        project_id = uuid4()
         session_data = ChatSessionCreate(
-            project_id=uuid4(),
+            project_id=project_id,
             title="Original Title",
             description="Original description"
         )
@@ -137,7 +155,7 @@ class TestChatSessionService:
             is_active=False,
             metadata={"updated": True}
         )
-        updated_session = self.service.update_session(session.id, update_data)
+        updated_session = self.service.update_session(session.id, update_data, str(project_id))
 
         assert updated_session is not None
         assert updated_session.id == session.id
@@ -147,53 +165,64 @@ class TestChatSessionService:
         assert updated_session.metadata == {"updated": True}
         assert updated_session.updated_at > original_updated_at
 
+        # Test updating without project_id fails
+        with pytest.raises(ValueError, match="project_id is required"):
+            self.service.update_session(session.id, update_data, None)
+
         # Test updating non-existent session
-        non_existent_update = self.service.update_session(uuid4(), update_data)
+        non_existent_update = self.service.update_session(uuid4(), update_data, str(uuid4()))
         assert non_existent_update is None
 
     def test_delete_session(self):
         """Test deleting a chat session."""
         # Create a session
+        project_id = uuid4()
         session = self.service.create_session(ChatSessionCreate(
-            project_id=uuid4(),
+            project_id=project_id,
             title="Test Session"
         ))
 
         # Delete the session
-        deleted = self.service.delete_session(session.id)
+        deleted = self.service.delete_session(session.id, project_id=str(project_id))
         assert deleted is True
 
         # Verify it's gone
-        assert self.service.get_session(session.id) is None
+        assert self.service.get_session(session.id, str(project_id)) is None
+
+        # Test deleting without project_id fails
+        with pytest.raises(ValueError, match="project_id is required"):
+            self.service.delete_session(session.id)
 
         # Test deleting non-existent session
-        assert self.service.delete_session(uuid4()) is False
+        assert self.service.delete_session(uuid4(), project_id=str(uuid4())) is False
 
     def test_delete_session_with_messages_force_required(self):
         """Test that deleting a session with messages requires force flag."""
         # Create a session and add a message
+        project_id = uuid4()
         session = self.service.create_session(ChatSessionCreate(
-            project_id=uuid4(),
+            project_id=project_id,
             title="Test Session"
         ))
         self.service.add_message(session.id, MessageCreate(
             role="user",
             content="Test message"
-        ))
+        ), str(project_id))
 
         # Try to delete without force - should fail
         with pytest.raises(ValueError, match="Cannot delete session.*with.*messages"):
-            self.service.delete_session(session.id, force=False)
+            self.service.delete_session(session.id, force=False, project_id=str(project_id))
 
         # Delete with force - should succeed
-        deleted = self.service.delete_session(session.id, force=True)
+        deleted = self.service.delete_session(session.id, force=True, project_id=str(project_id))
         assert deleted is True
 
     def test_add_message(self):
         """Test adding a message to a chat session."""
         # Create a session
+        project_id = uuid4()
         session = self.service.create_session(ChatSessionCreate(
-            project_id=uuid4(),
+            project_id=project_id,
             title="Test Session"
         ))
 

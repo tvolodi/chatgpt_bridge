@@ -2,7 +2,16 @@
 Chat Session API Endpoints
 
 This module provides RESTful API endpoints for managing chat sessions
-and their messages within the AI Chat Assistant backend.
+nested within projects, as per BACKEND_SERVICES_PLAN.md.
+
+API Structure:
+- POST   /api/projects/{project_id}/sessions              - Create new session
+- GET    /api/projects/{project_id}/sessions              - List sessions in project
+- GET    /api/projects/{project_id}/sessions/{session_id} - Get session details
+- PUT    /api/projects/{project_id}/sessions/{session_id} - Update session
+- DELETE /api/projects/{project_id}/sessions/{session_id} - Delete session
+- POST   /api/projects/{project_id}/sessions/{session_id}/messages - Add message
+- GET    /api/projects/{project_id}/sessions/{session_id}/messages - Get messages
 """
 
 from typing import List, Optional
@@ -13,12 +22,13 @@ from fastapi.responses import JSONResponse
 
 from ..models.chat_session import (
     ChatSession, ChatSessionCreate, ChatSessionUpdate, Message, MessageCreate,
-    ChatSessionSummary, ChatSessionStats, ChatSessionWithMessages
+    ChatSessionSummary, ChatSessionWithMessages
 )
 from ..services.chat_session_service import ChatSessionService
 
-# Create the router
-router = APIRouter(prefix="/api/chat-sessions", tags=["chat-sessions"])
+# Create the router for project-nested sessions
+# This will be included with prefix /api/projects in main.py
+router = APIRouter(tags=["chat-sessions"])
 
 # Dependency to get the chat session service
 def get_chat_session_service() -> ChatSessionService:
@@ -26,20 +36,29 @@ def get_chat_session_service() -> ChatSessionService:
     return ChatSessionService()
 
 
-@router.post("/", response_model=ChatSession, status_code=201)
+@router.post("/{project_id}/sessions", response_model=ChatSession, status_code=201)
 async def create_chat_session(
+    project_id: UUID,
     session_data: ChatSessionCreate,
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSession:
     """
-    Create a new chat session.
+    Create a new chat session within a project.
 
-    - **project_id**: UUID of the project this session belongs to
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
+
+    **Request Body:**
     - **title**: Display title for the session (1-200 characters)
     - **description**: Optional description (max 1000 characters)
     - **metadata**: Optional additional metadata
+
+    **Returns:**
+    - Created ChatSession object
     """
     try:
+        # Ensure project_id is set in the session data
+        session_data.project_id = project_id
         session = service.create_session(session_data)
         return session
     except ValueError as e:
@@ -48,35 +67,23 @@ async def create_chat_session(
         raise HTTPException(status_code=500, detail=f"Failed to create chat session: {str(e)}")
 
 
-@router.get("/{session_id}", response_model=ChatSession)
-async def get_chat_session(
-    session_id: UUID,
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
-    service: ChatSessionService = Depends(get_chat_session_service)
-) -> ChatSession:
-    """
-    Get a chat session by ID.
-
-    - **session_id**: UUID of the chat session to retrieve
-    - **project_id**: Optional project ID for nested directory structure
-    """
-    session = service.get_session(session_id, project_id)
-    if not session:
-        raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
-    return session
-
-
-@router.get("/", response_model=List[ChatSessionSummary])
-async def list_chat_sessions(
-    project_id: Optional[UUID] = Query(None, description="Filter by project ID"),
+@router.get("/{project_id}/sessions", response_model=List[ChatSessionSummary])
+async def list_sessions_in_project(
+    project_id: UUID,
     include_inactive: bool = Query(False, description="Include inactive sessions"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> List[ChatSessionSummary]:
     """
-    List chat sessions with optional filtering.
+    List all chat sessions within a specific project.
 
-    - **project_id**: Optional UUID to filter sessions by project
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
+
+    **Query Parameters:**
     - **include_inactive**: Whether to include inactive sessions (default: false)
+
+    **Returns:**
+    - List of ChatSessionSummary objects for the project
     """
     try:
         sessions = service.list_sessions(project_id=project_id, include_inactive=include_inactive)
@@ -85,27 +92,65 @@ async def list_chat_sessions(
         raise HTTPException(status_code=500, detail=f"Failed to list chat sessions: {str(e)}")
 
 
-@router.put("/{session_id}", response_model=ChatSession)
+@router.get("/{project_id}/sessions/{session_id}", response_model=ChatSession)
+async def get_chat_session(
+    project_id: UUID,
+    session_id: UUID,
+    service: ChatSessionService = Depends(get_chat_session_service)
+) -> ChatSession:
+    """
+    Get a specific chat session details.
+
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
+    - **session_id**: UUID of the chat session to retrieve
+
+    **Returns:**
+    - ChatSession object with full details
+    """
+    session = service.get_session(session_id, str(project_id))
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+    
+    # Verify session belongs to this project
+    if session.project_id != project_id:
+        raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+    
+    return session
+
+
+@router.put("/{project_id}/sessions/{session_id}", response_model=ChatSession)
 async def update_chat_session(
+    project_id: UUID,
     session_id: UUID,
     update_data: ChatSessionUpdate,
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSession:
     """
     Update an existing chat session.
 
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
     - **session_id**: UUID of the chat session to update
-    - **project_id**: Optional project ID for nested directory structure
+
+    **Request Body:**
     - **title**: Optional new title (1-200 characters)
     - **description**: Optional new description (max 1000 characters)
     - **is_active**: Optional active status
     - **metadata**: Optional updated metadata
+
+    **Returns:**
+    - Updated ChatSession object
     """
     try:
-        session = service.update_session(session_id, update_data, project_id)
+        session = service.update_session(session_id, update_data, str(project_id))
         if not session:
-            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        # Verify session belongs to this project
+        if session.project_id != project_id:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
         return session
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -115,27 +160,42 @@ async def update_chat_session(
         raise HTTPException(status_code=500, detail=f"Failed to update chat session: {str(e)}")
 
 
-@router.delete("/{session_id}")
+@router.delete("/{project_id}/sessions/{session_id}")
 async def delete_chat_session(
+    project_id: UUID,
     session_id: UUID,
     force: bool = Query(False, description="Force deletion even with messages"),
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> JSONResponse:
     """
     Delete a chat session and all its messages.
 
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
     - **session_id**: UUID of the chat session to delete
-    - **project_id**: Optional project ID for nested directory structure
+
+    **Query Parameters:**
     - **force**: Force deletion even if session has messages (default: false)
+
+    **Returns:**
+    - Confirmation message
     """
     try:
-        deleted = service.delete_session(session_id, force=force, project_id=project_id)
+        # First verify the session exists and belongs to this project
+        session = service.get_session(session_id, str(project_id))
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        if session.project_id != project_id:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        deleted = service.delete_session(session_id, force=force, project_id=str(project_id))
         if not deleted:
             raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
+        
         return JSONResponse(
             status_code=200,
-            content={"message": f"Chat session {session_id} deleted successfully"}
+            content={"message": f"Chat session {session_id} deleted successfully from project {project_id}"}
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -145,91 +205,119 @@ async def delete_chat_session(
         raise HTTPException(status_code=500, detail=f"Failed to delete chat session: {str(e)}")
 
 
-@router.post("/{session_id}/messages", response_model=Message, status_code=201)
+@router.post("/{project_id}/sessions/{session_id}/messages", response_model=Message, status_code=201)
 async def add_message_to_session(
+    project_id: UUID,
     session_id: UUID,
     message_data: MessageCreate,
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> Message:
     """
     Add a message to a chat session.
 
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
     - **session_id**: UUID of the chat session
-    - **project_id**: Optional project ID for nested directory structure
+
+    **Request Body:**
     - **role**: Role of the message sender (user, assistant, system)
     - **content**: The message content
     - **metadata**: Optional additional metadata
+
+    **Returns:**
+    - Created Message object
     """
     try:
-        message = service.add_message(session_id, message_data, project_id)
+        # Verify session exists and belongs to this project
+        session = service.get_session(session_id, str(project_id))
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        if session.project_id != project_id:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        message = service.add_message(session_id, message_data, str(project_id))
         return message
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to add message: {str(e)}")
 
 
-@router.get("/{session_id}/messages", response_model=List[Message])
+@router.get("/{project_id}/sessions/{session_id}/messages", response_model=List[Message])
 async def get_session_messages(
+    project_id: UUID,
     session_id: UUID,
     limit: Optional[int] = Query(None, ge=1, le=1000, description="Maximum number of messages to return"),
     offset: int = Query(0, ge=0, description="Number of messages to skip"),
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> List[Message]:
     """
     Get messages for a chat session.
 
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
     - **session_id**: UUID of the chat session
-    - **project_id**: Optional project ID for nested directory structure
+
+    **Query Parameters:**
     - **limit**: Optional limit on number of messages (1-1000)
     - **offset**: Number of messages to skip from the beginning
+
+    **Returns:**
+    - List of Message objects
     """
     try:
-        messages = service.get_messages(session_id, limit=limit, offset=offset, project_id=project_id)
+        # Verify session exists and belongs to this project
+        session = service.get_session(session_id, str(project_id))
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        if session.project_id != project_id:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        messages = service.get_messages(session_id, limit=limit, offset=offset, project_id=str(project_id))
         return messages
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get messages: {str(e)}")
 
 
-@router.get("/{session_id}/full", response_model=ChatSessionWithMessages)
+@router.get("/{project_id}/sessions/{session_id}/full", response_model=ChatSessionWithMessages)
 async def get_session_with_messages(
+    project_id: UUID,
     session_id: UUID,
-    project_id: Optional[str] = Query(None, description="Project ID for nested structure"),
     service: ChatSessionService = Depends(get_chat_session_service)
 ) -> ChatSessionWithMessages:
     """
-    Get a chat session with its full message history.
+    Get a chat session with its full message history (BONUS ENDPOINT).
 
+    **Path Parameters:**
+    - **project_id**: UUID of the parent project
     - **session_id**: UUID of the chat session to retrieve
-    - **project_id**: Optional project ID for nested directory structure
+
+    **Returns:**
+    - ChatSessionWithMessages object containing session and all messages
     """
     try:
-        session_with_messages = service.get_session_with_messages(session_id, project_id)
+        # Verify session exists and belongs to this project
+        session = service.get_session(session_id, str(project_id))
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        if session.project_id != project_id:
+            raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found in project {project_id}")
+        
+        session_with_messages = service.get_session_with_messages(session_id, str(project_id))
         if not session_with_messages:
             raise HTTPException(status_code=404, detail=f"Chat session {session_id} not found")
+        
         return session_with_messages
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get session with messages: {str(e)}")
-
-
-@router.get("/stats/summary", response_model=ChatSessionStats)
-async def get_chat_session_stats(
-    project_id: Optional[UUID] = Query(None, description="Filter stats by project ID"),
-    service: ChatSessionService = Depends(get_chat_session_service)
-) -> ChatSessionStats:
-    """
-    Get statistics for chat sessions.
-
-    - **project_id**: Optional UUID to filter stats by project
-    """
-    try:
-        stats = service.get_session_stats(project_id=project_id)
-        return stats
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get session stats: {str(e)}")
