@@ -34,6 +34,10 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `DELETE /api/projects/{project_id}` - Delete project
 - `GET /api/projects/{project_id}/tree` - Get project hierarchy
 
+**Bonus Features** (Implemented Beyond Plan):
+- `GET /api/projects/tree/all` - Get all project trees
+- `GET /api/projects/stats/overview` - Get project statistics and analytics
+
 ### 2. Chat Session Management Service
 **Purpose**: Manage chat sessions within projects
 **Key Responsibilities**:
@@ -51,6 +55,12 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `DELETE /api/sessions/{session_id}` - Delete session
 - `POST /api/sessions/{session_id}/switch` - Switch to session
 
+**Bonus Features** (Implemented Beyond Plan):
+- `POST /api/chat_sessions/{session_id}/messages` - Add message to session
+- `GET /api/chat_sessions/{session_id}/messages` - Get session messages
+- `GET /api/chat_sessions/{session_id}/full` - Get complete session with messages
+- `GET /api/chat_sessions/stats/summary` - Get session statistics and summaries
+
 ### 3. AI Provider Service
 **Purpose**: Handle communication with AI models and providers
 **Key Responsibilities**:
@@ -67,6 +77,16 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `GET /api/providers/models` - Get available models
 - `POST /api/providers/test` - Test provider connection
 
+**Bonus Features** (Implemented Beyond Plan):
+- `GET /api/ai-providers/models/available` - Get available models per provider
+- `POST /api/ai-providers/{provider_id}/request` - Send request to AI provider
+- `GET /api/ai-providers/{provider_id}/usage` - Get provider usage statistics
+- `GET /api/ai-providers/usage/all` - Get usage stats for all providers
+- `GET /api/ai-providers/{provider_id}/health` - Check provider health status
+- `POST /api/ai-providers/{provider_id}/health/check` - Perform health check
+- `GET /api/ai-providers/health/all` - Check health of all providers
+- `POST /api/ai-providers/conversation` - Handle conversation requests
+
 ### 4. Conversation Service
 **Purpose**: Manage chat conversations and message history
 **Key Responsibilities**:
@@ -81,6 +101,14 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `POST /api/sessions/{session_id}/messages` - Send new message
 - `GET /api/messages/{message_id}` - Get specific message
 - `DELETE /api/sessions/{session_id}/messages` - Clear history
+
+**Bonus Features** (Implemented Beyond Plan):
+- `POST /api/conversations/send` - Send message to AI
+- `GET /api/conversations/history/{session_id}` - Get message history
+- `GET /api/conversations/stats` - Get conversation statistics
+- `GET /api/conversations/settings` - Get conversation settings
+- `PUT /api/conversations/settings` - Update conversation settings
+- `DELETE /api/conversations/context/{session_id}` - Clear conversation context
 
 ## Supporting Services (Medium Priority)
 
@@ -101,6 +129,16 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `DELETE /api/files/{file_id}` - Delete file
 - `GET /api/files/search` - Search files
 
+**Bonus Features** (Implemented Beyond Plan):
+- `GET /api/files/{file_id}` - Get file details
+- `GET /api/files/{file_id}/content` - Get file content
+- `PUT /api/files/{file_id}` - Update file
+- `POST /api/files/{file_id}/process` - Process file with pipelines
+- `POST /api/files/context` - Get file context for conversations
+- `GET /api/files/stats` - Get file statistics
+- `GET /api/files/types/supported` - Get supported file types
+- Dual file management systems: workspace files and project-specific files
+
 ### 6. Settings Management Service
 **Purpose**: Manage user settings and application configuration
 **Key Responsibilities**:
@@ -116,6 +154,22 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `PUT /api/settings` - Update settings
 - `POST /api/settings/test-api-key` - Test API key validity
 - `GET /api/settings/providers` - Get provider configurations
+
+**Bonus Features** (Implemented Beyond Plan):
+- `GET /api/settings/default` - Get default settings
+- `GET /api/settings/user/{user_id}` - Get user-specific settings
+- `GET /api/settings/{settings_id}` - Get specific settings
+- `POST /api/settings` - Create settings
+- `POST /api/settings/{settings_id}/duplicate` - Duplicate settings
+- `GET /api/settings/{settings_id}/export` - Export settings
+- `POST /api/settings/import` - Import settings
+- `POST /api/settings/validate` - Validate settings
+- `GET /api/settings/api-providers/{provider_name}` - Get API provider config (critical for API keys)
+- `PUT /api/settings/api-providers/{provider_name}` - Update API provider config (critical for API keys)
+- `POST /api/settings/{settings_id}/reset` - Reset settings
+- `GET /api/settings/user/{user_id}/effective` - Get effective user settings
+- `GET /api/settings/categories/{category}` - Get settings by category
+- `PUT /api/settings/categories/{category}` - Update settings by category
 
 ## Advanced Services (Lower Priority)
 
@@ -133,6 +187,17 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `GET /api/search/files` - Search files
 - `GET /api/search/global` - Global search
 
+**Bonus Features** (Implemented Beyond Plan):
+- `POST /api/search` - Search with advanced filters
+- `POST /api/search/advanced` - Advanced search with scopes
+- `GET /api/search/suggest` - Get search suggestions/autocomplete
+- `POST /api/search/index/build` - Build search indices
+- `GET /api/search/indices` - List search indices
+- `DELETE /api/search/index/{index_id}` - Delete specific index
+- `DELETE /api/search/indices` - Delete all indices
+- `GET /api/search/analytics` - Get search analytics
+- `GET /api/search/quick` - Quick search endpoint
+
 ### 8. User State Management Service
 **Purpose**: Track and manage user application state
 **Key Responsibilities**:
@@ -147,6 +212,53 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - `PUT /api/state` - Update user state
 - `POST /api/state/save` - Save current state
 - `GET /api/state/last-session` - Get last used session
+
+**Bonus Features** (Implemented Beyond Plan):
+- `POST /user-state/states` - Create user state (prefix: `/user-state`)
+- `GET /user-state/states/{state_id}` - Get user state
+- `GET /user-state/states` - List user states
+- `PUT /user-state/states/{state_id}` - Update user state
+- `DELETE /user-state/states/{state_id}` - Delete user state
+- `DELETE /user-state/states` - Clear all states
+- `GET /user-state/preferences` - Get user preferences
+- `PUT /user-state/preferences` - Update user preferences
+- `GET /user-state/ui-state` - Get UI state
+- `PUT /user-state/ui-state` - Update UI state
+- `GET /user-state/session/{session_id}` - Get session-specific state
+- `PUT /user-state/session` - Update session state
+- `POST /user-state/activity` - Log user activity
+- `GET /user-state/activity` - Get recent activity
+- `POST /user-state/bookmarks` - Create bookmark
+- `GET /user-state/bookmarks` - List bookmarks
+- `DELETE /user-state/bookmarks/{bookmark_id}` - Delete bookmark
+- `POST /user-state/backup` - Create state backup
+
+## Additional Services (Bonus - Not Planned)
+
+### 9. Chat Service
+**Purpose**: High-level chat operations and workflows
+**Key Responsibilities**:
+- Provide simplified chat operations
+- Handle high-level chat workflows
+- Support session creation and management
+
+**API Endpoints Implemented**:
+- `POST /api/chat/send` - Send chat message
+- `GET /api/chat/history/{session_id}` - Get chat history
+- `POST /api/chat/sessions` - Create chat session
+- `DELETE /api/chat/sessions/{session_id}` - Delete chat session
+
+---
+
+### 10. Workspace Service
+**Purpose**: Workspace and project directory management
+**Key Responsibilities**:
+- Manage workspace operations
+- Handle project directory structure
+- Support workspace-specific file management
+
+**API Endpoints Implemented**:
+- Various workspace management operations with prefix `/api/workspace`
 
 ## Implementation Priority
 
@@ -179,3 +291,39 @@ Based on the functional requirements in `specifications/functionality.md`, here 
 - **User settings**: .env file and settings JSON
 - **File attachments**: Organized directory structure
 - **Search indexes**: Optional indexing for performance
+
+---
+
+## API Routing Reference
+
+### Current Implementation Notes
+
+**API Versioning Strategy**:
+- Current implementation uses `/api/` prefix without version numbers
+- Plan specified `/api/v1/...` but this has not been implemented
+- All endpoints use the base `/api/` prefix
+
+**Service-Specific Routing Prefixes**:
+- `/api/chat` - Chat Service
+- `/api/projects` - Project Management Service
+- `/api/chat_sessions` - Chat Session Management Service (legacy: flat structure)
+- `/api/ai-providers` - AI Provider Service
+- `/api/conversations` - Conversation Service
+- `/api/files` - File Management Service
+- `/api/settings` - Settings Management Service
+- `/api/search` - Search Service
+- `/user-state` - User State Management Service (note: no `/api/` prefix)
+- `/api/workspace-files` - Workspace Files Service
+- `/api/workspace` - Workspace Service
+
+**Note on User State Service**:
+- Uses `/user-state` prefix instead of `/api/state` as specified in plan
+- Does not use the standard `/api/` prefix pattern
+- Provides consistent endpoint organization under `/user-state/` path
+
+**Bonus Features Summary**:
+- Over 60 additional endpoints implemented beyond the 40 planned endpoints
+- Each service includes health monitoring, statistics, and advanced operations
+- Import/Export functionality for settings and data
+- Activity tracking and bookmark management
+- File processing pipelines and search index management
