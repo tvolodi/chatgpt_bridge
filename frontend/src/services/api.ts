@@ -276,3 +276,38 @@ export const providersAPI = {
   getProviderModels: () =>
     apiClient.get('/ai-providers/models/available'),
 }
+
+// Templates API
+export const templatesAPI = {
+  // List templates
+  listTemplates: (projectId?: string, category?: string) =>
+    apiClient.get('/templates/', { params: { project_id: projectId, category } }),
+
+  // Create template
+  createTemplate: (templateData: any) =>
+    apiClient.post('/templates/', templateData),
+
+  // Get template
+  getTemplate: (templateId: string) =>
+    apiClient.get(`/templates/${templateId}`),
+
+  // Update template
+  updateTemplate: (templateId: string, updateData: any) =>
+    apiClient.put(`/templates/${templateId}`, updateData),
+
+  // Delete template
+  deleteTemplate: (templateId: string) =>
+    apiClient.delete(`/templates/${templateId}`),
+
+  // Get categories
+  getCategories: () =>
+    apiClient.get('/templates/categories/'),
+
+  // Substitute template parameters
+  substituteTemplate: (templateId: string, parameters: Record<string, string>) =>
+    apiClient.post(`/templates/${templateId}/substitute`, { parameters }),
+
+  // Get template placeholders
+  getTemplatePlaceholders: (templateId: string) =>
+    apiClient.get(`/templates/${templateId}/placeholders`),
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Save, Download, Upload, RotateCcw, User, Palette, Bell, Monitor, Globe, Settings as SettingsIcon } from 'lucide-react'
+import { Save, Download, Upload, RotateCcw, User, Palette, Bell, Monitor, Globe, Settings as SettingsIcon, FileText } from 'lucide-react'
 import { useSettingsStore, UserPreferences } from '../stores/settingsStore'
 import { settingsAPI } from '../services/api'
 import { ProfileSettings } from '../components/settings/ProfileSettings'
@@ -8,13 +8,15 @@ import { NotificationSettings } from '../components/settings/NotificationSetting
 import { SystemSettings } from '../components/settings/SystemSettings'
 import { AccountSettings } from '../components/settings/AccountSettings'
 import { ProviderManagementPage } from './ProviderManagementPage'
+import { TemplateManager } from '../components/TemplateManager'
 
-type SettingsTab = 'profile' | 'appearance' | 'notifications' | 'system' | 'account' | 'providers'
+type SettingsTab = 'profile' | 'appearance' | 'notifications' | 'system' | 'account' | 'providers' | 'templates'
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
   const [isLoading, setIsLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [showTemplateManager, setShowTemplateManager] = useState(false)
 
   const { preferences, uiState, updatePreferences, updateUIState } = useSettingsStore()
 
@@ -174,6 +176,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'appearance' as SettingsTab, label: 'Appearance', icon: Palette },
     { id: 'notifications' as SettingsTab, label: 'Notifications', icon: Bell },
     { id: 'providers' as SettingsTab, label: 'Providers', icon: SettingsIcon },
+    { id: 'templates' as SettingsTab, label: 'Templates', icon: FileText },
     { id: 'system' as SettingsTab, label: 'System', icon: Monitor },
     { id: 'account' as SettingsTab, label: 'Account', icon: Globe }
   ]
@@ -255,11 +258,32 @@ export const SettingsPage: React.FC = () => {
             {activeTab === 'appearance' && <AppearanceSettings preferences={preferences} uiState={uiState} onUpdatePreferences={updatePreferences} onUpdateUI={updateUIState} />}
             {activeTab === 'notifications' && <NotificationSettings preferences={preferences} onUpdate={updatePreferences} />}
             {activeTab === 'providers' && <ProviderManagementPage />}
+            {activeTab === 'templates' && (
+              <div className="text-center py-12">
+                <FileText size={48} className="mx-auto mb-4 text-slate-400" />
+                <h3 className="text-xl font-semibold text-slate-50 mb-2">Message Templates</h3>
+                <p className="text-slate-400 mb-6">
+                  Create and manage reusable message templates with parameter substitution
+                </p>
+                <button
+                  onClick={() => setShowTemplateManager(true)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                >
+                  Open Template Manager
+                </button>
+              </div>
+            )}
             {activeTab === 'system' && <SystemSettings preferences={preferences} onUpdate={updatePreferences} />}
             {activeTab === 'account' && <AccountSettings />}
           </div>
         </div>
       </div>
+
+      {/* Template Manager Modal */}
+      <TemplateManager
+        isOpen={showTemplateManager}
+        onClose={() => setShowTemplateManager(false)}
+      />
     </div>
   )
 }

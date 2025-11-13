@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from backend.config.settings import settings
-from backend.api import chat, files, workspace, projects, chat_sessions, ai_providers, conversations, file_management, settings as settings_api, search, user_state
+from backend.api import chat, files, workspace, projects, chat_sessions, ai_providers, conversations, file_management, settings as settings_api, search, user_state, templates
 
 # Configure logging
 logging.basicConfig(level=settings.LOG_LEVEL)
@@ -47,6 +47,7 @@ app.include_router(search.router)
 app.include_router(user_state.router)
 app.include_router(files.router, prefix="/api/workspace-files", tags=["workspace-files"])
 app.include_router(workspace.router, prefix="/api/workspace", tags=["workspace"])
+app.include_router(templates.router)
 
 
 # Health check endpoint
