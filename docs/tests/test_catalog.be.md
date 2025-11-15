@@ -126,9 +126,9 @@
   3. Verify API key is not exposed in logs.
 - Expected Result:
   - API keys are read from environment variables securely.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_env_variables.py\`
+  - File: \`tests/test_env_config.py\`
   - Framework: pytest
 - Notes: Tests API key environment variable management
 
@@ -147,9 +147,9 @@
   4. Verify old API key is replaced.
 - Expected Result:
   - .env file changes are reflected in settings without restart.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_env_persistence.py\`
+  - File: \`tests/test_env_config.py\`
   - Framework: pytest
 - Notes: Tests .env file persistence and hot-reload
 
@@ -168,9 +168,9 @@
   4. Verify error response has meaningful message.
 - Expected Result:
   - Errors are handled gracefully with proper logging and HTTP responses.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_error_handling.py\`
+  - File: \`tests/test_error_handling_logging.py\`
   - Framework: pytest
 - Notes: Tests error handling and logging
 
@@ -482,9 +482,9 @@
   5. Verify template is retrieved correctly.
 - Expected Result:
   - Templates can be created and retrieved.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_template_creation.py\`
+  - File: \`tests/test_message_templates.py\`
   - Framework: pytest
 - Notes: Tests template creation and management
 
@@ -504,9 +504,9 @@
   5. Verify all operations succeeded.
 - Expected Result:
   - Full template CRUD operations work.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_template_crud.py\`
+  - File: \`tests/test_message_templates.py\`
   - Framework: pytest
 - Notes: Tests template CRUD operations
 
@@ -525,9 +525,9 @@
   4. Verify result is: "Review Python code: x = 1".
 - Expected Result:
   - Template parameter substitution works with regex-based replacement.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/unit/test_template_substitution.py\`
+  - File: \`tests/test_message_templates.py\`
   - Framework: pytest
 - Notes: Tests template parameter substitution with regex
 
@@ -1137,9 +1137,9 @@
   4. Verify response structure is correct.
 - Expected Result:
   - Message history can be retrieved via API endpoint.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_message_history_api.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests message history API retrieval
 
@@ -1158,9 +1158,9 @@
   4. Verify message status is set to 'failed'.
 - Expected Result:
   - Error messages from failed API calls are handled and returned.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_error_handling_api.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests error message handling
 
@@ -1178,9 +1178,9 @@
   3. Verify new message gets new id and timestamp.
 - Expected Result:
   - Failed messages can be retried.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_message_retry.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests message retry functionality
 
@@ -1198,9 +1198,9 @@
   3. Verify each file has id, name, size, type, uploaded_at.
 - Expected Result:
   - Project files can be listed via API.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_list_project_files.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests project files listing
 
@@ -1219,9 +1219,9 @@
   4. Verify file can be saved locally.
 - Expected Result:
   - Files can be downloaded via API.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_file_download.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests file download
 
@@ -1239,9 +1239,9 @@
   3. Verify only session-scoped files are returned.
 - Expected Result:
   - Session files can be listed.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_list_session_files.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests session files listing
 
@@ -1261,9 +1261,9 @@
   4. Verify HTTP status codes are correct (200 vs 400/401).
 - Expected Result:
   - API key can be tested via endpoint.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/functional/test_api_key_test_endpoint.py\`
+  - File: \`tests/test_api_endpoints.py\`
   - Framework: pytest
 - Notes: Tests API key test endpoint
 
@@ -1288,9 +1288,9 @@
   7. Verify all data is still present.
 - Expected Result:
   - Complete chat workflow works end-to-end.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/e2e/test_complete_chat_workflow.py\`
+  - File: \`tests/test_e2e_workflows.py\`
   - Framework: pytest
 - Notes: Tests complete chat workflow (project → session → message → response → persistence)
 
@@ -1311,9 +1311,9 @@
   6. Verify can switch providers mid-session.
 - Expected Result:
   - Multi-provider switching within a session works.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/e2e/test_multi_provider_switching.py\`
+  - File: \`tests/test_e2e_workflows.py\`
   - Framework: pytest
 - Notes: Tests multi-provider switching
 
@@ -1334,9 +1334,9 @@
   5. Verify message persists with file reference.
 - Expected Result:
   - File upload and context inclusion in AI request works end-to-end.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/e2e/test_file_upload_and_context.py\`
+  - File: \`tests/test_e2e_workflows.py\`
   - Framework: pytest
 - Notes: Tests file upload and context inclusion
 
@@ -1357,9 +1357,9 @@
   6. Verify message history shows substituted content.
 - Expected Result:
   - Template usage end-to-end (create → substitute → send → save) works.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/e2e/test_template_usage.py\`
+  - File: \`tests/test_e2e_workflows.py\`
   - Framework: pytest
 - Notes: Tests template usage end-to-end
 
@@ -1383,9 +1383,9 @@
   8. Verify Session B data is unaffected.
 - Expected Result:
   - Cross-session data isolation is maintained.
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: \`tests/e2e/test_cross_session_isolation.py\`
+  - File: \`tests/test_e2e_workflows.py\`
   - Framework: pytest
 - Notes: Tests cross-session data isolation
 
