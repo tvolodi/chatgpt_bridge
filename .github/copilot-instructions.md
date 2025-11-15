@@ -1,7 +1,10 @@
 # Documentation
 Do not generate .md files if they are not asked directly.
 
-Feature implementation rules:
+# Feature implementation rules:
+
+Use BE for the backend module and FE for the frontend module.
+
 1. **Always** treat `docs/01_requirements_registry.md` as the main truth for the feature that must be implemented.
 2. Use correspondent **module specs** (`doc/modules/MOD-<module>.md` files) for detailed implementation guidance.
 3.For each requirement:

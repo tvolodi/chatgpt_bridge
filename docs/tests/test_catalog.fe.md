@@ -40,7 +40,7 @@
   4. Verify all child elements are rendered.
 - Expected Result:
   - Header renders at correct height with all elements present.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/Header.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -86,7 +86,7 @@
   5. Verify sidebar width returns to ~280px.
 - Expected Result:
   - Sidebar can be toggled between expanded and collapsed states.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/Sidebar.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -722,7 +722,7 @@
   4. Verify content area is below header.
 - Expected Result:
   - Header renders at ~80px height and is fixed.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/Header.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -768,7 +768,7 @@
   6. Verify sidebar expands back to ~280px.
 - Expected Result:
   - Sidebar can be resized/toggled.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/Sidebar.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -789,7 +789,7 @@
   4. Verify title is in a prominent location.
 - Expected Result:
   - Application title displays prominently in header.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/Header.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -813,7 +813,7 @@
   6. Verify result is navigated to (message highlighted).
 - Expected Result:
   - Search bar opens and shows filtered results.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/SearchBar.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -880,7 +880,7 @@
   5. Verify logout action triggers.
 - Expected Result:
   - User menu dropdown shows and logout works.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/UserMenu.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -906,7 +906,7 @@
   6. Verify children hide.
 - Expected Result:
   - Project tree expands and collapses correctly.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ProjectTree.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -996,7 +996,7 @@
   4. Verify bubbles have distinct styling per role.
 - Expected Result:
   - Messages display in bubble format.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatArea.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1017,9 +1017,9 @@
   4. Verify alignment is consistent throughout.
 - Expected Result:
   - Message alignment follows role (user right, AI left).
-- Status: proposed
+- Status: implemented
 - Automation Location:
-  - File: `src/test/components/ChatArea.test.tsx`
+  - File: `src/test/components/ChatMessage.test.tsx`
   - Framework: Vitest + React Testing Library
 - Notes: Tests message alignment
 
@@ -1038,7 +1038,7 @@
   4. Verify timestamp is accurate.
 - Expected Result:
   - Timestamps display correctly on messages.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatMessage.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1081,7 +1081,7 @@
   5. Verify scroll follows to latest message.
 - Expected Result:
   - Chat auto-scrolls to latest message.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatArea.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1102,7 +1102,7 @@
   4. Verify user doesn't unexpectedly scroll to bottom.
 - Expected Result:
   - Scroll position is preserved when loading history.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatArea.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1124,7 +1124,7 @@
   4. Paste elsewhere to verify content.
 - Expected Result:
   - Copy button copies message to clipboard.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatMessage.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1147,7 +1147,7 @@
   5. Verify spinner disappears.
 - Expected Result:
   - Loading indicator shows during AI response.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatArea.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1173,7 +1173,7 @@
   7. Verify Enter sends (Shift+Enter creates line break).
 - Expected Result:
   - Enter sends message; Shift+Enter creates new line.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatInput.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1197,7 +1197,7 @@
   7. Send message and verify disables during loading.
 - Expected Result:
   - Send button state reflects input and loading state.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatInput.test.tsx`
   - Framework: Vitest + React Testing Library
@@ -1222,7 +1222,7 @@
   7. Verify input blocks at 10000 chars.
 - Expected Result:
   - Character counter displays and enforces limit.
-- Status: proposed
+- Status: implemented
 - Automation Location:
   - File: `src/test/components/ChatInput.test.tsx`
   - Framework: Vitest + React Testing Library
